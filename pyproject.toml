@@ -1,0 +1,23 @@
+[project]
+name = "resimulate"
+version = "0.1.0"
+description = "ReSIMulate is a terminal application built for eSIM and SIM-specific APDU analysis. It captures APDU commands, saves them, and replays them to facilitate differential testing, ensuring accurate validation and debugging of SIM interactions."
+authors = [
+    { name = "Niklas Bittner", email = "niklas.bittner@stud.tu-darmstadt.de" },
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "rich (>=13.9.4,<14.0.0)",
+    "pysim @ git+https://github.com/osmocom/pySim.git",
+    "pyshark (>=0.6,<0.7)",
+    "argcomplete (>=3.5.3,<4.0.0)",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.10.0"
