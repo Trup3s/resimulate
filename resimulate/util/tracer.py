@@ -1,22 +1,27 @@
 from queue import Queue
 
 from pySim.apdu import ApduDecoder, CardReset
+from pySim.apdu.global_platform import ApduCommands as GlobalPlatformCommands
 from pySim.apdu.ts_31_102 import ApduCommands as UsimApduCommands
 from pySim.apdu.ts_102_221 import ApduCommands as UiccApduCommands
 from pySim.apdu.ts_102_221 import UiccSelect, UiccStatus
+from pySim.apdu.ts_102_222 import ApduCommands as ManageApduCommands
 from pySim.apdu_source import ApduSource
+from pySim.ara_m import CardApplicationARAM
 from pySim.cards import UiccCardBase
 from pySim.commands import SimCardCommands
 from pySim.euicc import CardApplicationECASD, CardApplicationISDR
+from pySim.global_platform import CardApplicationISD
 from pySim.runtime import RuntimeState
 from pySim.ts_31_102 import CardApplicationUSIM
 from pySim.ts_31_103 import CardApplicationISIM
 from pySim.ts_102_221 import CardProfileUICC
-
 from util.dummy_sim_link import DummySimLink
 from util.logger import log
 
-APDU_COMMANDS = UiccApduCommands + UsimApduCommands
+APDU_COMMANDS = (
+    UiccApduCommands + UsimApduCommands + ManageApduCommands + GlobalPlatformCommands
+)
 
 
 # Taken from the pySim project and modified for the ReSIMulate project
@@ -29,6 +34,8 @@ class Tracer:
         profile.add_application(CardApplicationISIM())
         profile.add_application(CardApplicationISDR())
         profile.add_application(CardApplicationECASD())
+        profile.add_application(CardApplicationARAM())
+        profile.add_application(CardApplicationISD())
 
         scc = SimCardCommands(transport=DummySimLink())
         card = UiccCardBase(scc)
@@ -53,7 +60,7 @@ class Tracer:
                 package_queue.task_done()
                 return
             except Exception as e:
-                log.error("Error reading APDU: %s", e)
+                log.error("Error reading APDU (%s): %s", apdu, e)
                 continue
 
             if apdu is None:
@@ -71,10 +78,10 @@ class Tracer:
             try:
                 apdu_command.process(self.runtime_state)
             except ValueError as e:
-                log.error("Error processing APDU: %s", e)
+                log.error("Error reading APDU (%s): %s", apdu, e)
                 continue
             except AttributeError as e:
-                log.error("Error processing APDU: %s", e)
+                log.error("Error processing APDU (%s): %s", apdu, e)
                 return
 
             # Avoid cluttering the log with too much verbosity

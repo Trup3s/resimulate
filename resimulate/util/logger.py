@@ -1,6 +1,8 @@
 import logging
-from rich.logging import RichHandler
+
 from rich.console import Console
+from rich.logging import RichHandler
+from util.apdu_highlighter import ApduHighlighter
 
 
 class RichLogger:
@@ -22,8 +24,10 @@ class RichLogger:
         self.logger = logging.getLogger("rich")
 
     def get_logger(self, console: Console = None) -> logging.Logger:
-        if console:
-            self._initialize(console)
+        if not console:
+            console = Console(highlighter=ApduHighlighter())
+
+        self._initialize(console)
         return self.logger
 
 

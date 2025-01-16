@@ -1,23 +1,17 @@
 import pickle
-from queue import Empty, Queue
+import signal
+from queue import Empty, Queue, ShutDown
 from threading import Thread
-import time
 
 from pySim.apdu import Apdu, ApduCommand
 from pySim.apdu_source.gsmtap import ApduSource
+from rich.align import Align
+from rich.console import Group
 from rich.live import Live
+from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
+from rich.text import Text
 from util.logger import log
 from util.tracer import Tracer
-
-from rich.console import Group
-from rich.panel import Panel
-from rich.progress import (
-    BarColumn,
-    Progress,
-    SpinnerColumn,
-    TextColumn,
-    TimeElapsedColumn,
-)
 
 
 class Recorder:
@@ -30,6 +24,10 @@ class Recorder:
         self.tracer_thread = Thread(
             target=self.tracer.main, args=(self.package_queue,), daemon=True
         )
+        signal.signal(signal.SIGINT, self.__signal_handler)
+
+    def __signal_handler(self, sig, frame):
+        self.package_queue.shutdown(immediate=True)
 
     def record(self, output_path: str, timeout: int):
         capture_progress = Progress(
@@ -47,8 +45,12 @@ class Recorder:
         )
 
         main_group = Group(
-            Panel(capture_progress),
+            # Panel(capture_progress, title="APDU Packets captured", expand=False),
             overall_progress,
+            Align.left(
+                Text.assemble("Press ", ("Ctrl+C", "bold red"), " to stop capturing."),
+                vertical="bottom",
+            ),
         )
 
         overall_task_id = overall_progress.add_task(
@@ -57,7 +59,7 @@ class Recorder:
             total=None,
         )
 
-        with Live(main_group):
+        with Live(main_group) as live:
             self.tracer_thread.start()
 
             while self.tracer_thread.is_alive():
@@ -69,22 +71,27 @@ class Recorder:
                         log.debug("No more APDU packets to capture.")
                         break
 
-                    capture_task_id = capture_progress.add_task(
+                    log.info("Captured %s %s", apdu_command._name, apdu)
+
+                    """ capture_task_id = capture_progress.add_task(
                         "",
                         completed=len(self.captured_apdus),
                         packet_type=str(apdu_command._name) or "",
                         packet_description=str(apdu_command.path_str),
                         packet_code=str(apdu_command.col_sw),
-                    )
+                    ) """
 
                     self.captured_apdus.append(apdu)
 
-                    capture_progress.stop_task(capture_task_id)
+                    """ capture_progress.stop_task(capture_task_id) """
                 except TimeoutError:
                     log.debug("Timeout reached, stopping capture.")
                     break
                 except Empty:
                     log.debug("No more APDU packets to capture.")
+                    break
+                except ShutDown:
+                    log.debug("Shutting down capture.")
                     break
                 except UnboundLocalError as e:
                     log.debug("Error capturing APDU packets: %s", e)
@@ -95,8 +102,6 @@ class Recorder:
                     description=f"[bold green]{len(self.captured_apdus)} packet(s) captured!",
                 )
 
-            capture_progress.stop_task(capture_task_id)
-
             overall_progress.update(
                 overall_task_id,
                 description="[bold yellow]Saving captured APDU commands...",
@@ -106,7 +111,6 @@ class Recorder:
 
             with open(output_path, "wb") as f:
                 pickle.dump(self.captured_apdus, f)
-                time.sleep(3)
 
             overall_progress.update(
                 overall_task_id,
