@@ -16,8 +16,9 @@ from pySim.runtime import RuntimeState
 from pySim.ts_31_102 import CardApplicationUSIM
 from pySim.ts_31_103 import CardApplicationISIM
 from pySim.ts_102_221 import CardProfileUICC
-from util.dummy_sim_link import DummySimLink
-from util.logger import log
+
+from resimulate.util.dummy_sim_link import DummySimLink
+from resimulate.util.logger import log
 
 APDU_COMMANDS = (
     UiccApduCommands + UsimApduCommands + ManageApduCommands + GlobalPlatformCommands
@@ -42,8 +43,8 @@ class Tracer:
         self.runtime_state = RuntimeState(card, profile)
         self.apdu_decoder = ApduDecoder(APDU_COMMANDS)
 
-        self.suppress_status = True
-        self.suppress_select = True
+        self.suppress_status = False
+        self.suppress_select = False
         self.show_raw_apdu = False
         self.source = source
 

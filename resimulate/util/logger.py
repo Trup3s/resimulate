@@ -1,8 +1,10 @@
 import logging
+import sys
 
 from rich.console import Console
 from rich.logging import RichHandler
-from util.apdu_highlighter import ApduHighlighter
+
+from resimulate.util.apdu_highlighter import ApduHighlighter
 
 
 class RichLogger:
@@ -29,6 +31,18 @@ class RichLogger:
 
         self._initialize(console)
         return self.logger
+
+
+class LoggerWriter:
+    def __init__(self, level):
+        self.level = level
+
+    def write(self, message, *args, **kwargs):
+        if message != "\n":
+            self.level(message)
+
+    def flush(self):
+        self.level(sys.stderr)
 
 
 log = RichLogger().get_logger()

@@ -1,6 +1,5 @@
-from exceptions import PcscError
 from osmocom.utils import Hexstr, h2i, i2h
-from pySim.transport import LinkBaseTpdu
+from pySim.transport import LinkBaseTpdu, ProactiveHandler
 from pySim.utils import ResTuple
 from smartcard import System
 from smartcard.CardConnection import CardConnection
@@ -11,20 +10,23 @@ from smartcard.Exceptions import (
     NoCardException,
 )
 from smartcard.ExclusiveConnectCardConnection import ExclusiveConnectCardConnection
-from util.logger import log
+from smartcard.pcsc.PCSCReader import PCSCReader
+
+from resimulate.exceptions import PcscError
+from resimulate.util.logger import log
 
 
 class PcscLink(LinkBaseTpdu):
     protocol = CardConnection.T0_protocol
 
-    def __init__(self, device: int, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, device_index: int, **kwargs):
+        super().__init__(proactive_handler=ProactiveHandler(), **kwargs)
 
-        readers = System.readers()
-        if device > len(readers):
-            raise PcscError(f"Device with index {device} not found.")
+        readers: list[PCSCReader] = System.readers()
+        if device_index > len(readers):
+            raise PcscError(f"Device with index {device_index} not found.")
 
-        self.pcsc_device = readers[device]
+        self.pcsc_device = readers[device_index]
         self.card_connection = ExclusiveConnectCardConnection(
             self.pcsc_device.createConnection()
         )
@@ -33,40 +35,38 @@ class PcscLink(LinkBaseTpdu):
         return "PCSC[%s]" % (self._reader)
 
     def __del__(self):
-        try:
-            self.card_connection.disconnect()
-        except:
-            pass
+        self.disconnect()
 
     def __enter__(self):
         self.connect()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.card_connection.disconnect()
-        log.debug("Disconnected from device %s", self.pcsc_device)
+        self.disconnect()
 
     def connect(self):
         try:
             self.card_connection.disconnect()
             self.card_connection.connect()
-            supported_protocols = self.card_connection.getSupportedProtocols()
+            supported_protocol = self.card_connection.getProtocol()
             self.card_connection.disconnect()
 
-            if supported_protocols & CardConnection.T0_protocol:
+            if supported_protocol & CardConnection.T0_protocol:
                 protocol = CardConnection.T0_protocol
-            elif supported_protocols & CardConnection.T1_protocol:
+            elif supported_protocol & CardConnection.T1_protocol:
                 protocol = CardConnection.T1_protocol
             else:
-                raise PcscError("No supported protocol found.")
+                raise PcscError("No supported protocol found: %s" % supported_protocol)
 
+            self.set_tpdu_format(protocol)
             log.debug(
-                "Connecting to device %s using protocol %s", self.pcsc_device, protocol
+                "Connecting to device %s using protocol T%s", self.pcsc_device, protocol
             )
 
             self.card_connection.connect(protocol=protocol)
         except (CardConnectionException, NoCardException) as e:
-            raise PcscError from e
+            log.error("Failed to connect to device")
+            raise PcscError("Failed to connect to device") from e
 
         log.debug("Connected to device %s", self.pcsc_device)
 
@@ -75,24 +75,29 @@ class PcscLink(LinkBaseTpdu):
         log.debug("Disconnected from device %s", self.pcsc_device)
 
     def _reset_card(self):
+        log.debug("Resetting card...")
         self.disconnect()
         self.connect()
+        return 1
 
     def wait_for_card(self, timeout: int | None = None, newcardonly: bool = False):
         card_request = CardRequest(
             readers=[self.pcsc_device], timeout=timeout, newcardonly=newcardonly
         )
         try:
-            log.debug("Waiting for card on device %s", self.pcsc_device)
+            log.debug("Waiting for card...")
             card_request.waitforcard()
         except CardRequestTimeoutException as e:
-            raise PcscError from e
+            raise PcscError("Timeout waiting for card") from e
 
-        self.__connect()
+        self.connect()
+
+    def get_atr(self) -> Hexstr:
+        return self.card_connection.getATR()
 
     def send_tpdu(self, tpdu: Hexstr) -> ResTuple:
         try:
             data, sw1, sw2 = self.card_connection.transmit(h2i(tpdu))
-            return i2h(data) + i2h([sw1, sw2])
+            return i2h(data), i2h([sw1, sw2])
         except CardConnectionException as e:
-            raise PcscError from e
+            raise PcscError("Failed to send TPDU") from e

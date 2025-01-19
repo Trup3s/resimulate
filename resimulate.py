@@ -4,10 +4,11 @@
 import argparse
 
 import argcomplete
-from commands.record import Recorder
-from commands.replay import Replayer
 from pySim.apdu_source.gsmtap import GsmtapApduSource
 from rich_argparse import RichHelpFormatter
+
+from resimulate.commands.record import Recorder
+from resimulate.commands.replay import Replayer
 
 parser = argparse.ArgumentParser(
     description="ReSIMulate is a terminal application built for eSIM and SIM-specific APDU analysis. It captures APDU commands, saves them, and replays them to facilitate differential testing, ensuring accurate validation and debugging of SIM interactions.",
@@ -62,7 +63,7 @@ replay_parser.add_argument(
     "-i",
     "--input",
     required=True,
-    type=argparse.FileType("r"),
+    type=argparse.FileType("rb"),
     help="File containing APDU commands to replay (e.g., 'commands.apdu').",
 )
 replay_parser.add_argument(
@@ -70,7 +71,14 @@ replay_parser.add_argument(
     "--pcsc-device",
     type=int,
     default=0,
-    help="Target simtrace device to send APDU commands (default: 0).",
+    help="Target PC/SC device to send APDU commands (default: 0).",
+)
+replay_parser.add_argument(
+    "--isd-r-aid",
+    type=str,
+    default="default",
+    choices=["default", "5ber"],
+    help="ISD-R AID to use for replaying APDU commands (default: 'default').",
 )
 
 if __name__ == "__main__":
@@ -84,7 +92,7 @@ if __name__ == "__main__":
         recorder.record(args.output, args.timeout)
 
     elif args.command == "replay":
-        replayer = Replayer(args.pcsc_device)
+        replayer = Replayer(args.pcsc_device, args.isd_r_aid)
         replayer.replay(args.input.name)
 
     else:

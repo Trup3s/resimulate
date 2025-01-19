@@ -10,8 +10,9 @@ from rich.console import Group
 from rich.live import Live
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 from rich.text import Text
-from util.logger import log
-from util.tracer import Tracer
+
+from resimulate.util.logger import log
+from resimulate.util.tracer import Tracer
 
 
 class Recorder:

@@ -8,9 +8,18 @@
       "name": "reSIMulate: record",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/resimulate/resimulate.py",
+      "program": "${workspaceFolder}/resimulate.py",
       "console": "integratedTerminal",
-      "args": ["record", "-o test.pkl"],
+      "args": ["record", "-o", "test.apdu"],
+      "justMyCode": false
+    },
+    {
+      "name": "reSIMulate: replay",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/resimulate.py",
+      "console": "integratedTerminal",
+      "args": ["replay", "-i", "test.pkl"],
       "justMyCode": false
     }
   ]
