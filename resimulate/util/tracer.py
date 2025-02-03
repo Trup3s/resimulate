@@ -18,6 +18,7 @@ from pySim.ts_31_103 import CardApplicationISIM
 from pySim.ts_102_221 import CardProfileUICC
 
 from resimulate.util.dummy_sim_link import DummySimLink
+from resimulate.util.enums import ISDR_AID
 from resimulate.util.logger import log
 
 APDU_COMMANDS = (
@@ -27,13 +28,13 @@ APDU_COMMANDS = (
 
 # Taken from the pySim project and modified for the ReSIMulate project
 class Tracer:
-    def __init__(self, source: ApduSource):
+    def __init__(self, source: ApduSource, isd_r_aid: ISDR_AID):
         # we assume a generic UICC profile; as all APDUs return 9000 in DummySimLink above,
         # all CardProfileAddon (including SIM) will probe successful.
         profile = CardProfileUICC()
         profile.add_application(CardApplicationUSIM())
         profile.add_application(CardApplicationISIM())
-        profile.add_application(CardApplicationISDR())
+        profile.add_application(CardApplicationISDR(aid=isd_r_aid.value))
         profile.add_application(CardApplicationECASD())
         profile.add_application(CardApplicationARAM())
         profile.add_application(CardApplicationISD())

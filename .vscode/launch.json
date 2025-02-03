@@ -10,7 +10,13 @@
       "request": "launch",
       "program": "${workspaceFolder}/resimulate.py",
       "console": "integratedTerminal",
-      "args": ["record", "-o", "test.apdu"],
+      "args": [
+        "record",
+        "-o",
+        "${input:promptFilename}",
+        "--isd-r",
+        "${input:pickISDR}"
+      ],
       "justMyCode": false
     },
     {
@@ -19,8 +25,40 @@
       "request": "launch",
       "program": "${workspaceFolder}/resimulate.py",
       "console": "integratedTerminal",
-      "args": ["replay", "-i", "test.pkl"],
+      "args": [
+        "replay",
+        "-i",
+        "${input:pickFile}",
+        "--src-isd-r",
+        "${input:pickISDR}",
+        "--target-isd-r",
+        "${input:pickISDR}"
+      ],
       "justMyCode": false
+    }
+  ],
+  "inputs": [
+    {
+      "id": "pickFile",
+      "type": "command",
+      "command": "extension.commandvariable.file.pickFile",
+      "args": {
+        "description": "Path to recording file.",
+        "fromFolder": { "fixed": "${workspaceFolder}" }
+      }
+    },
+    {
+      "type": "promptString",
+      "id": "promptFilename",
+      "description": "Name of the recording file."
+    },
+
+    {
+      "type": "pickString",
+      "id": "pickISDR",
+      "description": "Pick the ISD-R",
+      "options": ["default", "5ber"],
+      "default": "default"
     }
   ]
 }

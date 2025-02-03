@@ -1,4 +1,3 @@
-import pickle
 import signal
 from queue import Empty, Queue, ShutDown
 from threading import Thread
@@ -11,33 +10,30 @@ from rich.live import Live
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 from rich.text import Text
 
+from resimulate.recording import Recording
+from resimulate.util.enums import ISDR_AID
 from resimulate.util.logger import log
 from resimulate.util.tracer import Tracer
 
 
 class Recorder:
-    def __init__(self, source: ApduSource):
-        self.tracer = Tracer(source)
-
-        self.captured_apdus = []
+    def __init__(self, source: ApduSource, src_isd_r: str):
+        isd_r_aid = ISDR_AID.get_aid(src_isd_r)
+        self.tracer = Tracer(source, isd_r_aid=isd_r_aid)
+        self.src_isd_r_aid = src_isd_r
 
         self.package_queue: Queue[tuple[Apdu, ApduCommand]] = Queue()
         self.tracer_thread = Thread(
             target=self.tracer.main, args=(self.package_queue,), daemon=True
         )
+        self.recording = Recording()
         signal.signal(signal.SIGINT, self.__signal_handler)
 
     def __signal_handler(self, sig, frame):
+        log.debug("Received signal %s, shutting down capture.", sig)
         self.package_queue.shutdown(immediate=True)
 
     def record(self, output_path: str, timeout: int):
-        capture_progress = Progress(
-            TimeElapsedColumn(),
-            TextColumn("{task.completed}"),
-            TextColumn("[bold blue]{task.fields[packet_type]}"),
-            TextColumn("[bold green]{task.fields[packet_description]}"),
-            TextColumn("{task.fields[packet_code]}"),
-        )
 
         overall_progress = Progress(
             TimeElapsedColumn(),
@@ -55,12 +51,12 @@ class Recorder:
         )
 
         overall_task_id = overall_progress.add_task(
-            f"[bold red]{len(self.captured_apdus)} packets captured!",
+            f"[bold red]{len(self.recording.apdus)} packets captured!",
             start=True,
             total=None,
         )
 
-        with Live(main_group) as live:
+        with Live(main_group):
             self.tracer_thread.start()
 
             while self.tracer_thread.is_alive():
@@ -73,18 +69,7 @@ class Recorder:
                         break
 
                     log.info("Captured %s %s", apdu_command._name, apdu)
-
-                    """ capture_task_id = capture_progress.add_task(
-                        "",
-                        completed=len(self.captured_apdus),
-                        packet_type=str(apdu_command._name) or "",
-                        packet_description=str(apdu_command.path_str),
-                        packet_code=str(apdu_command.col_sw),
-                    ) """
-
-                    self.captured_apdus.append(apdu)
-
-                    """ capture_progress.stop_task(capture_task_id) """
+                    self.recording.apdus.append(apdu)
                 except TimeoutError:
                     log.debug("Timeout reached, stopping capture.")
                     break
@@ -100,7 +85,7 @@ class Recorder:
 
                 overall_progress.update(
                     overall_task_id,
-                    description=f"[bold green]{len(self.captured_apdus)} packet(s) captured!",
+                    description=f"[bold green]{len(self.recording.apdus)} packet(s) captured!",
                 )
 
             overall_progress.update(
@@ -108,13 +93,10 @@ class Recorder:
                 description="[bold yellow]Saving captured APDU commands...",
             )
 
-            log.debug("Saving captured APDU commands to %s", output_path)
-
-            with open(output_path, "wb") as f:
-                pickle.dump(self.captured_apdus, f)
+            self.recording.save_file(output_path)
 
             overall_progress.update(
                 overall_task_id,
                 description="[bold green]Captured %s APDU packets!"
-                % len(self.captured_apdus),
+                % len(self.recording.apdus),
             )

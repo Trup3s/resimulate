@@ -1,5 +1,5 @@
 from osmocom.utils import Hexstr, h2i, i2h
-from pySim.transport import LinkBaseTpdu, ProactiveHandler
+from pySim.transport import LinkBaseTpdu
 from pySim.utils import ResTuple
 from smartcard import System
 from smartcard.CardConnection import CardConnection
@@ -14,6 +14,7 @@ from smartcard.pcsc.PCSCReader import PCSCReader
 
 from resimulate.exceptions import PcscError
 from resimulate.util.logger import log
+from resimulate.util.proactive_handler import ProactiveHandler
 
 
 class PcscLink(LinkBaseTpdu):
@@ -32,7 +33,7 @@ class PcscLink(LinkBaseTpdu):
         )
 
     def __str__(self) -> str:
-        return "PCSC[%s]" % (self._reader)
+        return "PCSC[%s]" % (self.pcsc_device)
 
     def __del__(self):
         self.disconnect()
@@ -71,7 +72,11 @@ class PcscLink(LinkBaseTpdu):
         log.debug("Connected to device %s", self.pcsc_device)
 
     def disconnect(self):
-        self.card_connection.disconnect()
+        try:
+            self.card_connection.disconnect()
+        except AttributeError:
+            pass
+
         log.debug("Disconnected from device %s", self.pcsc_device)
 
     def _reset_card(self):
