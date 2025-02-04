@@ -26,6 +26,18 @@ jobs:
           virtualenvs-create: false
           installer-parallel: true
 
+      - name: Validate the structure of the pyproject.toml
+        run: |
+          poetry check
+
+      - name: Verify that poetry.lock is consistent with pyproject.toml
+        run: |
+          poetry lock --check
+
+      - name: Install dependencies
+        run: |
+          poetry install
+
       - name: Check code formatting by black
         run: |
           poetry run black . --check
