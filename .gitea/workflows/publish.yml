@@ -8,6 +8,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    container: catthehacker/ubuntu:act-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
