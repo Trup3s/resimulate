@@ -10,6 +10,9 @@ pipx install poetry
 # Add Poetry to PATH
 echo "$HOME/.poetry/bin" >> $GITHUB_PATH
 
+# Configure Poetry
+poetry config virtualenvs.create false
+
 poetry check
 
 poetry lock --check
