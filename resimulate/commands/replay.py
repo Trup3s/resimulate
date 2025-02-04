@@ -77,8 +77,10 @@ class Replayer:
             try:
                 pcsc_link = PcscSimLink()  # PcscLink(device_index=self.device)
                 log.debug("PC/SC link initialized: %s", pcsc_link)
-                card = Card(pcsc_link).init_card(target_ids_r=self.target_isd_r_aid)
-                log.debug("Initialized card of type: %s", card.name)
+                card = Card(pcsc_link)
+                initialized_card = card.init_card(target_isd_r=self.target_isd_r_aid)
+                log.debug("Initialized card of type: %s", initialized_card.name)
+                log.debug("Card eUICC Info: %s", card.euicc_info_2)
             except Exception as e:
                 log.error("Failed to initialize card: %s", e)
                 log.exception(e)

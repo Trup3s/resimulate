@@ -13,7 +13,7 @@ from rich.text import Text
 from resimulate.recording import Recording
 from resimulate.util.enums import ISDR_AID
 from resimulate.util.logger import log
-from resimulate.util.tracer import Tracer
+from resimulate.tracer import Tracer
 
 
 class Recorder:
