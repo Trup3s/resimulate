@@ -21,9 +21,9 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.group.dev.dependencies]
-black = "^25.1.0"
 ruff = "^0.9.4"
-pyright = "^1.1.393"
+pre-commit = "^4.1.0"
+pyright = "^1.1.394"
 
 [tool.poetry.dependencies]
 pysim = { develop = true }
