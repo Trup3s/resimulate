@@ -48,7 +48,11 @@ class Card:
                 # skip any intermediary sub-classes such as CardApplicationSD
                 if hasattr(app_cls, "_" + app_cls.__name__ + "__intermediate"):
                     continue
-                self.profile.add_application(app_cls())
+                if app_cls == CardApplicationISDR:
+                    isdr = app_cls(aid=target_isd_r.value)
+                    self.profile.add_application(isdr)
+                else:
+                    self.profile.add_application(app_cls())
             # We have chosen SimCard() above, but we now know it actually is an UICC
             # so it's safe to assume it supports USIM application (which we're adding above).
             # IF we don't do this, we will have a SimCard but try USIM specific commands like
