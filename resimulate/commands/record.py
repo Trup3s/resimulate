@@ -10,10 +10,11 @@ from rich.live import Live
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 from rich.text import Text
 
-from resimulate.recording import Recording
+from resimulate.models.recorded_apdu import RecordedApdu
+from resimulate.models.recording import Recording
+from resimulate.tracer import Tracer
 from resimulate.util.enums import ISDR_AID
 from resimulate.util.logger import log
-from resimulate.tracer import Tracer
 
 
 class Recorder:
@@ -72,8 +73,13 @@ class Recorder:
                         log.debug("No more APDU packets to capture.")
                         break
 
-                    log.info("Captured %s %s", apdu_command._name, apdu)
-                    self.recording.apdus.append(apdu)
+                    log.info(
+                        "Captured %s %s %s",
+                        apdu_command._name,
+                        apdu_command.path_str,
+                        apdu,
+                    )
+                    self.recording.apdus.append(RecordedApdu(apdu, apdu_command))
                 except TimeoutError:
                     log.debug("Timeout reached, stopping capture.")
                     break

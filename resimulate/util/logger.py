@@ -21,7 +21,7 @@ class RichLogger:
             level="NOTSET",
             format="%(message)s",
             datefmt="[%X]",
-            handlers=[RichHandler(rich_tracebacks=True, console=console)],
+            handlers=[RichHandler(rich_tracebacks=True, console=console, markup=True)],
         )
         self.logger = logging.getLogger("rich")
 

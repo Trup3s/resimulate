@@ -2,14 +2,13 @@ import importlib.metadata
 import pickle
 from os.path import exists, isfile
 
-from pySim.apdu import Apdu
-
+from resimulate.models.recorded_apdu import RecordedApdu
 from resimulate.util.enums import ISDR_AID
 from resimulate.util.logger import log
 
 
 class Recording:
-    apdus: list[Apdu]
+    apdus: list[RecordedApdu]
     src_isd_r_aid: ISDR_AID
     version = importlib.metadata.version("resimulate")
 

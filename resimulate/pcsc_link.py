@@ -83,7 +83,6 @@ class PcscLink(LinkBaseTpdu):
         log.debug("Resetting card...")
         self.disconnect()
         self.connect()
-        return 1
 
     def wait_for_card(self, timeout: int | None = None, newcardonly: bool = False):
         card_request = CardRequest(
@@ -98,11 +97,8 @@ class PcscLink(LinkBaseTpdu):
         self.connect()
 
     def get_atr(self) -> Hexstr:
-        return self.card_connection.getATR()
+        return i2h(self.card_connection.getATR())
 
     def send_tpdu(self, tpdu: Hexstr) -> ResTuple:
-        try:
-            data, sw1, sw2 = self.card_connection.transmit(h2i(tpdu))
-            return i2h(data), i2h([sw1, sw2])
-        except CardConnectionException as e:
-            raise PcscError("Failed to send TPDU") from e
+        data, sw1, sw2 = self.card_connection.transmit(h2i(tpdu))
+        return i2h(data), i2h([sw1, sw2])

@@ -17,6 +17,7 @@ from pySim.ts_31_102 import CardApplicationUSIM
 from pySim.ts_31_103 import CardApplicationISIM
 from pySim.ts_102_221 import CardProfileUICC
 
+from resimulate.exceptions import RecorderException
 from resimulate.util.dummy_sim_link import DummySimLink
 from resimulate.util.enums import ISDR_AID
 from resimulate.util.logger import log
@@ -42,6 +43,10 @@ class Tracer:
         scc = SimCardCommands(transport=DummySimLink())
         card = UiccCardBase(scc)
         self.runtime_state = RuntimeState(card, profile)
+
+        if self.runtime_state is None:
+            raise RecorderException("Could not initialize runtime state.")
+
         self.apdu_decoder = ApduDecoder(APDU_COMMANDS)
 
         self.suppress_status = False

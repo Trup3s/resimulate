@@ -4,3 +4,7 @@ class PcscError(Exception):
 
 class CardTypeException(Exception):
     pass
+
+
+class RecorderException(Exception):
+    pass
