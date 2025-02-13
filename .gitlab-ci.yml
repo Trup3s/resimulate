@@ -1,0 +1,29 @@
+default:
+  image: python:3.13
+
+include:
+  - template: Jobs/Dependency-Scanning.gitlab-ci.yml
+  - template: Jobs/SAST.gitlab-ci.yml
+
+before_script:
+  - pip install poetry
+  - pip install poetry-plugin-shell
+  - poetry install --all-groups
+  - poetry shell
+
+stages:
+  - lint
+  - build
+
+black:
+  stage: linting
+  image: registry.gitlab.com/pipeline-components/black:latest
+  script:
+    - black --check --verbose -- .
+
+build:
+  stage: build
+  needs:
+    - linting
+  script:
+    - poetry build
