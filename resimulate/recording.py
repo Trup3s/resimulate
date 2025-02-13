@@ -46,6 +46,10 @@ class Recording:
         return recording
 
     def save_file(self, file_path: str) -> None:
-        log.debug("Saving captured APDU commands to %s", file_path)
+        if len(self.apdus) == 0:
+            log.info("No APDUs captured, not saving to file.")
+            return
+
+        log.info("Saving %s captured APDU commands to %s", len(self.apdus), file_path)
         with open(file_path, "wb") as f:
             pickle.dump(self, f)

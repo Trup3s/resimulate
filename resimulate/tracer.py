@@ -81,9 +81,11 @@ class Tracer:
                 apdu_command.process(self.runtime_state)
             except ValueError as e:
                 log.error("Error reading APDU (%s): %s", apdu, e)
+                log.exception(e)
                 continue
             except AttributeError as e:
                 log.error("Error processing APDU (%s): %s", apdu, e)
+                log.exception(e)
                 return
 
             # Avoid cluttering the log with too much verbosity
