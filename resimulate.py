@@ -2,6 +2,7 @@
 # PYTHON_ARGCOMPLETE_OK
 
 import argparse
+import importlib.metadata
 import logging
 
 import argcomplete
@@ -16,6 +17,20 @@ parser = argparse.ArgumentParser(
     description="ReSIMulate is a terminal application built for eSIM and SIM-specific APDU analysis. It captures APDU commands, saves them, and replays them to facilitate differential testing, ensuring accurate validation and debugging of SIM interactions.",
     formatter_class=RichHelpFormatter,
 )
+parser.add_argument(
+    "--version",
+    action="version",
+    version=f"%(prog)s {importlib.metadata.version('resimulate')}",
+)
+parser.add_argument(
+    "-v",
+    "--verbose",
+    action="store_true",
+    help="Enable verbose output during replay.",
+    required=False,
+)
+
+global_arg_parser = argparse.ArgumentParser(add_help=False)
 
 subparsers = parser.add_subparsers(
     title="Commands",
@@ -23,14 +38,11 @@ subparsers = parser.add_subparsers(
     required=True,
     help="Available commands: record, replay",
 )
-parser.add_argument(
-    "-v", "--verbose", action="store_true", help="Enable verbose output during replay."
-)
-parser.add_argument("--version", action="version", version="%(prog)s 0.1")
 
 # Record command
 record_parser = subparsers.add_parser(
     "record",
+    parents=[global_arg_parser],
     help="Record APDU commands from a specified source. Uses the SIMtrace2 GSMTAP to capture APDUs via UDP.",
 )
 record_parser.add_argument(
@@ -60,13 +72,15 @@ record_parser.add_argument(
     "-t",
     "--timeout",
     type=int,
-    default=10,
+    default=15,
     help="Timeout in seconds for recording (default: 10).",
 )
 
 # Replay command
 replay_parser = subparsers.add_parser(
-    "replay", help="Replay saved APDU commands to a target device."
+    "replay",
+    parents=[global_arg_parser],
+    help="Replay saved APDU commands to a target device.",
 )
 replay_parser.add_argument(
     "-i",

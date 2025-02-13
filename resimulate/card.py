@@ -1,15 +1,14 @@
-from pySim.transport import LinkBase
-from pySim.commands import SimCardCommands
-from pySim.filesystem import CardModel, CardApplication
 from pySim.cards import SimCardBase, UiccCardBase
-from pySim.runtime import RuntimeState
+from pySim.commands import SimCardCommands
+from pySim.euicc import CardApplicationISDR, EuiccInfo2
+from pySim.exceptions import SwMatchError
+from pySim.filesystem import CardApplication, CardModel
 from pySim.profile import CardProfile
+from pySim.runtime import RuntimeState
+from pySim.transport import LinkBase
 from pySim.ts_102_221 import CardProfileUICC
 from pySim.utils import all_subclasses
-from pySim.exceptions import SwMatchError
-from pySim.euicc import CardApplicationISDR, EuiccInfo2
 
-from resimulate.models.euicc_info_2 import EuiccInfo2Data
 from resimulate.util.enums import ISDR_AID
 from resimulate.util.logger import log
 
@@ -19,6 +18,7 @@ class Card:
     card: SimCardBase | None
     profile: CardProfile | None
     generic_card: bool = False
+    euicc_info_2: dict | None = None
 
     def __init__(self, sim_link: LinkBase):
         self.sim_link = sim_link
@@ -75,10 +75,9 @@ class Card:
                 euicc_info_2 = CardApplicationISDR.store_data_tlv(
                     self.sim_card_commands, EuiccInfo2(), EuiccInfo2
                 )
-                self.euicc_info_2 = EuiccInfo2Data.from_list(
-                    euicc_info_2.to_dict()["euicc_info2"]
-                )
+                self.euicc_info_2 = euicc_info_2.to_dict()["euicc_info2"]
             except SwMatchError:
+                log.warning("Card has ISD-R but not a SGP.22/SGP.32 eUICC.")
                 # has ISD-R but not a SGP.22/SGP.32 eUICC - maybe SGP.02?
                 pass
             finally:

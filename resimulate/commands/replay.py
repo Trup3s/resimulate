@@ -2,6 +2,7 @@ from osmocom.utils import b2h, h2b, h2i, i2h
 from pySim.apdu import Apdu
 from pySim.transport.pcsc import PcscSimLink
 from pySim.ts_102_221 import CardProfileUICC
+from pySim.utils import ResTuple
 from rich.align import Align
 from rich.console import Group
 from rich.live import Live
@@ -19,20 +20,28 @@ class Replayer:
         self.device = device
         self.target_isd_r_aid = ISDR_AID.get_aid(target_isd_r)
 
-    def __get_remaining_bytes(self, link: PcscSimLink, bytes_to_receive: int, cla: int):
+    def __get_remaining_bytes(
+        self, link: PcscSimLink, bytes_to_receive: int, cla: int
+    ) -> ResTuple:
         log.debug("Retrieving remaining bytes: %d", bytes_to_receive)
         apdu = Apdu(i2h([cla]) + "C00000" + i2h([bytes_to_receive]))
         return self.__send_apdu(link, apdu)
 
-    def __resend_with_modified_le(self, link: PcscSimLink, apdu: Apdu, le: int):
+    def __resend_with_modified_le(
+        self, link: PcscSimLink, apdu: Apdu, le: int
+    ) -> ResTuple:
         log.debug("Resending APDU with modified Le: %d", le)
         modified_apdu = Apdu(b2h(apdu.cmd)[:-2] + i2h([le]))
         return self.__send_apdu(link, modified_apdu)
 
-    def __send_apdu(self, link: PcscSimLink, apdu: Apdu):
+    def __send_apdu(self, link: PcscSimLink, apdu: Apdu) -> ResTuple:
         if self.recording.src_isd_r_aid and self.target_isd_r_aid:
-            if b2h(apdu.cmd_data) == self.recording.src_isd_r_aid.value:
-                apdu.cmd_data = h2b(self.target_isd_r_aid.value)
+            cmd_data = b2h(apdu.cmd_data)
+            if self.recording.src_isd_r_aid.value in cmd_data:
+                cmd_data = cmd_data.replace(
+                    self.recording.src_isd_r_aid.value, self.target_isd_r_aid.value
+                )
+                apdu.cmd_data = h2b(cmd_data)
 
         log.debug(
             "Sending APDU(%s) where CLA(%s), INS(%s), P1(%s), P2(%s), Lc(%s), DATA(%s), P3/Le(%s)",
@@ -89,20 +98,21 @@ class Replayer:
                 )
                 return
 
+            successful_replays = 0
             try:
                 with pcsc_link as link:
                     log.debug("Replaying APDUs...")
                     for idx, apdu in enumerate(self.recording.apdus, start=1):
-                        progress.update(
-                            progress_id,
-                            total=len(self.recording.apdus),
-                            completed=idx,
-                            description=f"Replaying APDU {idx} / {len(self.recording.apdus)}",
-                        )
-
                         data, resp = self.__send_apdu(link, apdu)
 
                         if resp == b2h(apdu.sw):
+                            progress.update(
+                                progress_id,
+                                total=len(self.recording.apdus),
+                                completed=idx,
+                                description=f"Replaying APDU {idx} / {len(self.recording.apdus)}",
+                            )
+                            successful_replays += 1
                             continue
 
                         log.debug(
@@ -145,7 +155,15 @@ class Replayer:
                 )
             else:
                 log.debug("Replay finished.")
-                progress.update(
-                    progress_id,
-                    description=":white_check_mark: [bold green]Replay finished.",
-                )
+
+                if not progress.finished:
+                    progress.update(
+                        progress_id,
+                        description=f":police_car_light: [bold yellow]Failed to replay all APDUs ({successful_replays}/{len(self.recording.apdus)}).",
+                    )
+
+                else:
+                    progress.update(
+                        progress_id,
+                        description=":white_check_mark: [bold green]Replay finished.",
+                    )

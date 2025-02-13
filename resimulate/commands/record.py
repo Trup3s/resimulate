@@ -26,7 +26,7 @@ class Recorder:
         self.tracer_thread = Thread(
             target=self.tracer.main, args=(self.package_queue,), daemon=True
         )
-        self.recording = Recording()
+        self.recording = Recording(src_isd_r=isd_r_aid)
         signal.signal(signal.SIGINT, self.__signal_handler)
 
     def __signal_handler(self, sig, frame):
@@ -45,7 +45,11 @@ class Recorder:
             # Panel(capture_progress, title="APDU Packets captured", expand=False),
             overall_progress,
             Align.left(
-                Text.assemble("Press ", ("Ctrl+C", "bold red"), " to stop capturing."),
+                Text.assemble(
+                    "Press ",
+                    ("Ctrl+C", "bold green"),
+                    " to stop capturing and save recorded commands.",
+                ),
                 vertical="bottom",
             ),
         )

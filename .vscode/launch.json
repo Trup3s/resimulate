@@ -11,6 +11,7 @@
       "program": "${workspaceFolder}/resimulate.py",
       "console": "integratedTerminal",
       "args": [
+        "--verbose",
         "record",
         "-o",
         "${input:promptFilename}",
@@ -26,11 +27,10 @@
       "program": "${workspaceFolder}/resimulate.py",
       "console": "integratedTerminal",
       "args": [
+        "--verbose",
         "replay",
         "-i",
         "${input:pickFile}",
-        "--src-isd-r",
-        "${input:pickISDR}",
         "--target-isd-r",
         "${input:pickISDR}"
       ],
