@@ -2,8 +2,8 @@ default:
   image: python:3.13
 
 include:
-  - template: Jobs/Dependency-Scanning.gitlab-ci.yml
-  - template: Jobs/SAST.gitlab-ci.yml
+  - template: Security/Dependency-Scanning.gitlab-ci.yml
+  - template: Security/SAST.gitlab-ci.yml
 
 before_script:
   - pip install poetry
