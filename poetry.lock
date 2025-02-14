@@ -624,27 +624,6 @@ files = [
 dev = ["build", "flake8", "mypy", "pytest", "twine"]
 
 [[package]]
-name = "pyright"
-version = "1.1.394"
-description = "Command line wrapper for pyright"
-optional = false
-python-versions = ">=3.7"
-groups = ["dev"]
-files = [
-    {file = "pyright-1.1.394-py3-none-any.whl", hash = "sha256:5f74cce0a795a295fb768759bbeeec62561215dea657edcaab48a932b031ddbb"},
-    {file = "pyright-1.1.394.tar.gz", hash = "sha256:56f2a3ab88c5214a451eb71d8f2792b7700434f841ea219119ade7f42ca93608"},
-]
-
-[package.dependencies]
-nodeenv = ">=1.6.0"
-typing-extensions = ">=4.1"
-
-[package.extras]
-all = ["nodejs-wheel-binaries", "twine (>=3.4.1)"]
-dev = ["twine (>=3.4.1)"]
-nodejs = ["nodejs-wheel-binaries"]
-
-[[package]]
 name = "pyscard"
 version = "2.2.1"
 description = "Smartcard module for Python."
@@ -939,18 +918,6 @@ files = [
 tests = ["pytest", "pytest-cov"]
 
 [[package]]
-name = "typing-extensions"
-version = "4.12.2"
-description = "Backported and Experimental Type Hints for Python 3.8+"
-optional = false
-python-versions = ">=3.8"
-groups = ["dev"]
-files = [
-    {file = "typing_extensions-4.12.2-py3-none-any.whl", hash = "sha256:04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d"},
-    {file = "typing_extensions-4.12.2.tar.gz", hash = "sha256:1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8"},
-]
-
-[[package]]
 name = "virtualenv"
 version = "20.29.2"
 description = "Virtual Python Environment builder"
@@ -986,4 +953,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13"
-content-hash = "dfb6fb5b3117a264727dbdac1fcedd2c4ca5d98bc3cfbd60424600a7d89255bb"
+content-hash = "6769cb982ccd033a328ed358794081da3415cfac21f6458d67dae9a68b806012"

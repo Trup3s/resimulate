@@ -1,8 +1,8 @@
-import importlib.metadata
 import pickle
 from os.path import exists, isfile
 
 from resimulate.models.recorded_apdu import RecordedApdu
+from resimulate.util import get_version
 from resimulate.util.enums import ISDR_AID
 from resimulate.util.logger import log
 
@@ -10,7 +10,7 @@ from resimulate.util.logger import log
 class Recording:
     apdus: list[RecordedApdu]
     src_isd_r_aid: ISDR_AID
-    version = importlib.metadata.version("resimulate")
+    version = get_version()
 
     def __init__(self, src_isd_r: ISDR_AID):
         self.src_isd_r_aid = src_isd_r
@@ -28,17 +28,16 @@ class Recording:
             raise TypeError(f"File {file_path} does not contain a Recording object.")
 
         log.debug("Loaded %d APDUs from %s", len(recording.apdus), file_path)
-        if recording.src_isd_r_aid != ISDR_AID._DEFAULT:
+        if recording.src_isd_r_aid != ISDR_AID.DEFAULT:
             log.debug(
                 "Recording used ISD-R AID: %s (%s)",
                 recording.src_isd_r_aid.value,
                 recording.src_isd_r_aid.name,
             )
 
-        if recording.version != importlib.metadata.version("resimulate"):
+        if recording.version != get_version():
             log.warning(
-                "File %s was created with a different version of ReSIMulate. "
-                "Please ensure compatibility.",
+                "File %s was created with a different version of ReSIMulate. Please ensure compatibility.",
                 file_path,
             )
 

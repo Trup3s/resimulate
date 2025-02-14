@@ -2,15 +2,14 @@
 # PYTHON_ARGCOMPLETE_OK
 
 import argparse
-import importlib.metadata
 import logging
 
-import argcomplete
 from pySim.apdu_source.gsmtap import GsmtapApduSource
 from rich_argparse import RichHelpFormatter
 
 from resimulate.commands.record import Recorder
 from resimulate.commands.replay import Replayer
+from resimulate.util import get_version
 from resimulate.util.logger import log
 
 parser = argparse.ArgumentParser(
@@ -20,7 +19,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     "--version",
     action="version",
-    version=f"%(prog)s {importlib.metadata.version('resimulate')}",
+    version=f"%(prog)s {get_version()}",
 )
 parser.add_argument(
     "-v",
