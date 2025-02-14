@@ -207,4 +207,7 @@ pyrightconfig.json
 .history
 .ionide
 
+### Ruff ###
+.ruff_cache/
+
 # End of https://www.toptal.com/developers/gitignore/api/git,visualstudiocode,python

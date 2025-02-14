@@ -2,11 +2,13 @@
 # PYTHON_ARGCOMPLETE_OK
 
 import argparse
+import argcomplete
 import logging
 
 from pySim.apdu_source.gsmtap import GsmtapApduSource
 from rich_argparse import RichHelpFormatter
 
+from resimulate import util
 from resimulate.commands.record import Recorder
 from resimulate.commands.replay import Replayer
 from resimulate.util import get_version
@@ -29,7 +31,9 @@ parser.add_argument(
     required=False,
 )
 
-global_arg_parser = argparse.ArgumentParser(add_help=False)
+global_arg_parser = argparse.ArgumentParser(
+    add_help=False, formatter_class=RichHelpFormatter
+)
 
 subparsers = parser.add_subparsers(
     title="Commands",
@@ -42,6 +46,7 @@ subparsers = parser.add_subparsers(
 record_parser = subparsers.add_parser(
     "record",
     parents=[global_arg_parser],
+    formatter_class=RichHelpFormatter,
     help="Record APDU commands from a specified source. Uses the SIMtrace2 GSMTAP to capture APDUs via UDP.",
 )
 record_parser.add_argument(
@@ -79,6 +84,7 @@ record_parser.add_argument(
 replay_parser = subparsers.add_parser(
     "replay",
     parents=[global_arg_parser],
+    formatter_class=RichHelpFormatter,
     help="Replay saved APDU commands to a target device.",
 )
 replay_parser.add_argument(
@@ -93,7 +99,8 @@ replay_parser.add_argument(
     "--pcsc-device",
     type=int,
     default=0,
-    help="Target PC/SC device to send APDU commands (default: %(default)s).",
+    choices=range(len(util.get_pcsc_devices())),
+    help=f"Target PC/SC device to send APDU commands (default: %(default)s). {'\n'.join(util.get_pcsc_devices())}",
 )
 replay_parser.add_argument(
     "--target-isd-r",
@@ -102,6 +109,8 @@ replay_parser.add_argument(
     choices=["default", "5ber"],
     help="Target ISD-R AID to use for replaying APDU commands (default: '%(default)s').",
 )
+
+argcomplete.autocomplete(parser)
 
 if __name__ == "__main__":
     # TODO: Configure argcomplete for shell tab completion
