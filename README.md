@@ -20,7 +20,7 @@ pipx install poetry
 pipx inject poetry poetry-plugin-shell
 ```
 
-Active the Poetry shell:
+Activate the Poetry shell:
 
 ```bash
 poetry shell

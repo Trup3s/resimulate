@@ -1,5 +1,5 @@
 {
-  "cSpell.words": ["ISDR", "replayer", "Replayer", "resimulate"],
+  "cSpell.words": ["apdus", "ISDR", "replayer", "Replayer", "resimulate"],
   "[python]": {
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "charliermarsh.ruff"

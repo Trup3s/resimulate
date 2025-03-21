@@ -10,17 +10,17 @@ from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 from rich.text import Text
 
 from resimulate.card import Card
-from resimulate.models.recorded_apdu import RecordedApdu
-from resimulate.pcsc_link import PcscLink
 from resimulate.models.recording import Recording
+from resimulate.pcsc_link import PcscLink
 from resimulate.util.enums import ISDR_AID
 from resimulate.util.logger import log
 
 
 class Replayer:
-    def __init__(self, device: int, target_isd_r: str):
+    def __init__(self, device: int, target_isd_r: str, mutate: bool = False):
         self.device = device
         self.target_isd_r_aid = ISDR_AID.get_aid(target_isd_r)
+        self.mutate = mutate
 
     def __get_remaining_bytes(
         self, link: PcscLink, bytes_to_receive: int, cla: int

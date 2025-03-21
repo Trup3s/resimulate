@@ -109,6 +109,12 @@ replay_parser.add_argument(
     choices=["default", "5ber"],
     help="Target ISD-R AID to use for replaying APDU commands (default: '%(default)s').",
 )
+replay_parser.add_argument(
+    "--mutate",
+    action="store_true",
+    default=False,
+    help="Mutate APDU commands to test for protocol errors (default: '%(default)s').",
+)
 
 argcomplete.autocomplete(parser)
 
@@ -125,7 +131,7 @@ if __name__ == "__main__":
         recorder.record(args.output, args.timeout)
 
     elif args.command == "replay":
-        replayer = Replayer(args.pcsc_device, args.target_isd_r)
+        replayer = Replayer(args.pcsc_device, args.target_isd_r, args.mutate)
         replayer.replay(args.input.name)
 
     else:

@@ -41,12 +41,25 @@ class Recording:
                 file_path,
             )
 
+        if recording.__has_open_channel():
+            log.warning(
+                "No MANAGE CHANNEL APDU found in recording. This may lead to issues during replay."
+            )
+
         return recording
+
+    def __has_open_channel(self) -> bool:
+        return any("MANAGE CHANNEL" in apdu.name for apdu in self.apdus)
 
     def save_file(self, file_path: str) -> None:
         if len(self.apdus) == 0:
             log.info("No APDUs captured, not saving to file.")
             return
+
+        if self.__has_open_channel():
+            log.warning(
+                "No MANAGE CHANNEL APDU found in recording. This may lead to issues during replay."
+            )
 
         log.info("Saving %s captured APDU commands to %s", len(self.apdus), file_path)
         with open(file_path, "wb") as f:
