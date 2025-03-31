@@ -9,9 +9,9 @@ from rich.live import Live
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 from rich.text import Text
 
-from resimulate.card import Card
+from resimulate.legacy_card import Card
 from resimulate.models.recording import Recording
-from resimulate.pcsc_link import PcscLink
+from resimulate.legacy_pcsc_link import PcscLink
 from resimulate.util.enums import ISDR_AID
 from resimulate.util.logger import log
 

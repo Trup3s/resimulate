@@ -1,7 +1,18 @@
 {
-  "cSpell.words": ["apdus", "ISDR", "replayer", "Replayer", "resimulate"],
+  "cSpell.words": [
+    "apdus",
+    "ECASD",
+    "ISDR",
+    "replayer",
+    "Replayer",
+    "resimulate"
+  ],
   "[python]": {
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "charliermarsh.ruff"
-  }
+  },
+  "files.exclude": {
+    "**/__pycache__": true
+  },
+  "jupyter.debugJustMyCode": true
 }
