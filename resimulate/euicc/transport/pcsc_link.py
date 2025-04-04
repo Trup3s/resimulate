@@ -111,6 +111,12 @@ class PcscLink(LinkBaseTpdu):
 
     def send_tpdu(self, tpdu: Hexstr) -> ResTuple:
         data, sw1, sw2 = self.card_connection.transmit(h2i(tpdu))
+        logging.debug(
+            "Sent TPDU: %s, received data: %s, SW: %s",
+            tpdu,
+            i2h(data),
+            i2h([sw1, sw2]),
+        )
         return i2h(data), i2h([sw1, sw2])
 
     def send_apdu_with_mutation(

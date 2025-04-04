@@ -18,6 +18,9 @@ class OperationRecorder:
             f"Recorded operation: {operation.func_name} with mutation {operation.mutation_type}"
         )
 
+    def clear(self):
+        self.recordings.clear()
+
     def save_file(self, file_path: str):
         with open(file_path, "wb") as f:
             pickle.dump(self, f)

@@ -13,6 +13,8 @@ dependencies = [
     "argcomplete (>=3.5.3,<4.0.0)",
     "rich-argparse (>=1.6.0,<2.0.0)",
     "pysim @ file:///home/niklas/Documents/documents/uni/master_thesis/pysim",
+    "requests (>=2.32.3,<3.0.0)",
+    "pydantic (>=2.11.2,<3.0.0)",
 ]
 
 

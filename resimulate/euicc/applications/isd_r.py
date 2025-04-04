@@ -1,16 +1,29 @@
+import base64
 import logging
 
-from pySim.euicc import (
+from resimulate.euicc.applications import Application
+from resimulate.euicc.es import es9p
+from resimulate.euicc.es.models.authenticate_server import (
+    AuthenticateServerRequest,
+    AuthenticateServerResponse,
+)
+from resimulate.euicc.es.models.authentication_response import AuthenticationResponse
+from resimulate.euicc.es.models.ctx_params_1 import (
+    CtxParams1,
+    CtxParamsForCommonAuthentication,
+    DeviceInfo,
+    Imei,
+    MatchingId,
+)
+from resimulate.euicc.models import (
     EuiccConfiguredAddresses,
-    EuiccInfo2,
     EuiccInfo1,
+    EuiccInfo2,
     GetEuiccChallenge,
     GetEuiccData,
+    Profile,
     TagList,
 )
-
-from resimulate.euicc.applications import Application
-from resimulate.euicc.models.profile import Profile
 
 
 class ISDR(Application):
@@ -26,12 +39,25 @@ class ISDR(Application):
             "euicc_challenge"
         ]
 
-    def get_euicc_info_1(self) -> list[dict]:
+    def get_euicc_challenge_raw(self) -> str:
+        command = self.store_data_tlv(
+            "get_euicc_challenge_raw",
+            GetEuiccChallenge,
+        )
+        euicc_challenge = base64.b64encode(command.to_tlv()).decode("utf-8")
+        return euicc_challenge
+
+    def get_euicc_info_1(self) -> dict:
         command = self.store_data_tlv("get_euicc_info_1", EuiccInfo1)
         euicc_info = command.to_dict().get("euicc_info1")
         return self._merge_dicts(euicc_info)
 
-    def get_euicc_info_2(self) -> list[dict]:
+    def get_euicc_info_1_raw(self) -> str:
+        command = self.store_data_tlv("get_euicc_info_1_raw", EuiccInfo1)
+        euicc_info = base64.b64encode(command.to_tlv()).decode("utf-8")
+        return euicc_info
+
+    def get_euicc_info_2(self) -> dict:
         command = self.store_data_tlv("get_euicc_info_2", EuiccInfo2)
         euicc_info = command.to_dict().get("euicc_info2")
         return self._merge_dicts(euicc_info)
@@ -48,14 +74,29 @@ class ISDR(Application):
         eid_data = self.store_data_tlv("get_eid", command, GetEuiccData)
         return eid_data.to_dict().get("get_euicc_data")[0]["eid_value"]
 
-    def initiate_authentication(self, profile: Profile):
-        smdpp_address = profile.smdpp_address
-        if not smdpp_address:
-            smdpp_address = self.get_configured_addresses().get("smdpp_address")
+    def authenticate_server(
+        self,
+        authentication: AuthenticationResponse,
+        matching_id: str,
+        imei: str | None = None,
+    ) -> str:
+        ctx_params_fca_children = [MatchingId(decoded=matching_id)]
+        if imei:
+            ctx_params_fca_children.append(DeviceInfo(children=[Imei(decoded=imei)]))
 
-        logging.info(f"Initiating authentication with {smdpp_address}")
-        challenge = self.get_euicc_challenge()
-        return challenge
+        ctx_params_1 = CtxParams1(
+            children=[
+                CtxParamsForCommonAuthentication(children=ctx_params_fca_children)
+            ]
+        )
+
+        request = AuthenticateServerRequest(children=[ctx_params_1])
+
+        command = self.store_data_tlv(
+            "authenticate_server", request, AuthenticateServerResponse
+        )
+        server_response = command.to_dict().get("authenticate_server_response")
+        return server_response
 
     def download_profile(self, profile: Profile):
         smdpp_address = profile.smdpp_address
@@ -63,4 +104,9 @@ class ISDR(Application):
             smdpp_address = self.get_configured_addresses().get("smdpp_address")
 
         logging.info(f"Downloading profile from {smdpp_address}")
-        # challenge = self.get_euicc_challenge()
+        euicc_challenge = self.get_euicc_challenge_raw()
+        euicc_info_1 = self.get_euicc_info_1_raw()
+        authentication_response = es9p.initiate_authentication(
+            smdpp_address, euicc_challenge, euicc_info_1
+        )
+        self.authenticate_server(authentication_response, profile.matching_id)
