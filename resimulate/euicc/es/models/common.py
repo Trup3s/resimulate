@@ -1,9 +1,9 @@
-from osmocom.construct import GreedyBytes
+from osmocom.construct import GreedyBytes, HexAdapter
 from osmocom.tlv import BER_TLV_IE
 
 
 class TransactionId(BER_TLV_IE, tag=0x80):
-    _construct = GreedyBytes
+    _construct = HexAdapter(GreedyBytes)
 
 
 class EuiccInfo1Raw(BER_TLV_IE, tag=0xBF20):

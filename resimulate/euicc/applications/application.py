@@ -30,10 +30,10 @@ class Application:
     def store_data_tlv(
         self,
         caller_func_name: str,
-        command_cls: type[BER_TLV_IE],
-        response_cls: type[BER_TLV_IE] | None = None,
-    ) -> type[BER_TLV_IE] | None:
-        command_encoded = command_cls().to_tlv()
+        request_cls: BER_TLV_IE,
+        response_cls: BER_TLV_IE | None = None,
+    ) -> BER_TLV_IE | None:
+        command_encoded = request_cls.to_tlv()
 
         if len(command_encoded) > 255:
             raise ValueError("Data too long")
@@ -45,11 +45,12 @@ class Application:
             raise EuiccException(sw)
 
         if response_cls is None:
-            response_cls = command_cls
+            response = request_cls
+        else:
+            response = response_cls
 
         if not data:
             return None
 
-        response = response_cls()
         response.from_tlv(h2b(data))
         return response

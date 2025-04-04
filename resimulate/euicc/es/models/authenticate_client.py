@@ -14,7 +14,7 @@ class Header(BaseModel):
     )
 
 
-class AuthenticationResponse(BaseModel):
+class AuthenticationClientResponse(BaseModel):
     header: Header
     transaction_id: str | None = Field(alias="transactionId", default=None)
     server_signed_1: str | None = Field(alias="serverSigned1", default=None)

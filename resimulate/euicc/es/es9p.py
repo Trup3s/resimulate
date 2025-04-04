@@ -1,13 +1,14 @@
+import logging
 import requests
 
-from resimulate.euicc.es.models.authentication_response import (
-    AuthenticationResponse,
+from resimulate.euicc.es.models.authenticate_client import (
+    AuthenticationClientResponse,
 )
 
 
 def initiate_authentication(
     smdpp_address: str, euicc_challenge: str, euicc_info_1: str
-) -> AuthenticationResponse:
+) -> AuthenticationClientResponse:
     """
     Initiate authentication with the eUICC using the provided parameters.
 
@@ -41,11 +42,15 @@ def initiate_authentication(
             f"Failed to initiate authentication: {response.status_code} - {response.text}"
         )
 
-    authentication_response = AuthenticationResponse(**response.json())
+    authentication_response = AuthenticationClientResponse(**response.json())
 
     if not authentication_response.success():
         raise Exception(
             f"Authentication failed: {authentication_response.header.function_execution_status.status_code_data}"
         )
+
+    logging.debug(
+        f"Authentication response: {authentication_response.model_dump_json()}"
+    )
 
     return authentication_response

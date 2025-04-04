@@ -23,7 +23,7 @@ class DeviceInfo(BER_TLV_IE, tag=0xA1, nested=[Tac, DeviceCapabilities, Imei]):
 
 
 class CtxParamsForCommonAuthentication(
-    BER_TLV_IE, tag=0x80, nested=[MatchingId, DeviceInfo]
+    BER_TLV_IE, tag=0x30, nested=[MatchingId, DeviceInfo]
 ):
     """
     SGP.22 Section 5.7.13:: CtxParams1

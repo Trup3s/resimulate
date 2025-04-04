@@ -1,15 +1,18 @@
 from osmocom.construct import Bytes, GreedyBytes, HexAdapter, Utf8Adapter
 from osmocom.tlv import BER_TLV_IE
-from pySim.euicc import EuiccChallenge
 
 from resimulate.euicc.es.models.common import TransactionId
 
 
-class ServerAddress(BER_TLV_IE, tag=0x81):
+class EuiccChallenge(BER_TLV_IE, tag=0x81):
+    _construct = HexAdapter(Bytes(16))
+
+
+class ServerAddress(BER_TLV_IE, tag=0x83):
     _construct = Utf8Adapter(GreedyBytes)
 
 
-class ServerChallenge(BER_TLV_IE, tag=0x82):
+class ServerChallenge(BER_TLV_IE, tag=0x84):
     _construct = HexAdapter(Bytes(16))
 
 
