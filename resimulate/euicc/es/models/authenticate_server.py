@@ -2,7 +2,15 @@ from osmocom.construct import Enum, GreedyBytes, HexAdapter, Int8ub
 from osmocom.tlv import BER_TLV_IE
 
 from resimulate.euicc.es.models.common import TransactionId
-from resimulate.euicc.es.models.ctx_params_1 import CtxParams1
+from resimulate.euicc.es.models.ctx_params_1 import (
+    CtxParams1,
+    CtxParamsForCommonAuthentication,
+    DeviceCapabilities,
+    DeviceInfo,
+    Imei,
+    MatchingId,
+    Tac,
+)
 from resimulate.euicc.es.models.euicc_signed_1 import EuiccSigned1
 from resimulate.euicc.es.models.server_signed_1 import ServerSigned1
 
@@ -16,6 +24,14 @@ class EuiccCiPKIdToBeUsed(BER_TLV_IE, tag=0x04):
 
 
 class Certificate(BER_TLV_IE, tag=0x30):
+    _construct = HexAdapter(GreedyBytes)
+
+
+class EuiccCertificate(BER_TLV_IE, tag=0x30):
+    _construct = HexAdapter(GreedyBytes)
+
+
+class EumCertificate(BER_TLV_IE, tag=0x30):
     _construct = HexAdapter(GreedyBytes)
 
 
@@ -41,7 +57,55 @@ class AuthenticateServerRequest(
     }
     """
 
-    pass
+    @classmethod
+    def build(
+        cls,
+        profile_matching_id: str,
+        server_signed_1: bytes,
+        server_signature_1: bytes,
+        euicc_ci_pki_to_be_used: bytes,
+        server_certificate: bytes,
+        imei: str | None = None,
+    ):
+        device_info_children = [
+            Tac(decoded="35290611"),
+            DeviceCapabilities(children=[]),
+        ]
+        if imei:
+            device_info_children.append(Imei(decoded=imei))
+
+        ctx_params_fca_children = [
+            MatchingId(decoded=profile_matching_id),
+            DeviceInfo(children=device_info_children),
+        ]
+
+        server_signed_1_cls = ServerSigned1()
+        server_signed_1_cls.from_tlv(server_signed_1)
+
+        server_signature_1_cls = ServerSignature1()
+        server_signature_1_cls.from_tlv(server_signature_1)
+
+        euicc_ci_pki_to_be_used_cls = EuiccCiPKIdToBeUsed()
+        euicc_ci_pki_to_be_used_cls.from_tlv(euicc_ci_pki_to_be_used)
+
+        server_certificate_cls = Certificate()
+        server_certificate_cls.from_tlv(server_certificate)
+
+        return cls(
+            children=[
+                server_signed_1_cls,
+                server_signature_1_cls,
+                euicc_ci_pki_to_be_used_cls,
+                server_certificate_cls,
+                CtxParams1(
+                    children=[
+                        CtxParamsForCommonAuthentication(
+                            children=ctx_params_fca_children
+                        )
+                    ]
+                ),
+            ]
+        )
 
 
 class AuthenticateErrorCode(BER_TLV_IE, tag=0x02):
