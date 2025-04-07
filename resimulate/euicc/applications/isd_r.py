@@ -1,13 +1,14 @@
 import base64
 import logging
 
+
 from resimulate.euicc.applications import Application
 from resimulate.euicc.es import es9p
 from resimulate.euicc.es.models.authenticate_server import (
     AuthenticateServerRequest,
     AuthenticateServerResponse,
     EuiccCiPKIdToBeUsed,
-    ServerCertificate,
+    Certificate,
     ServerSignature1,
 )
 from resimulate.euicc.es.models.authenticate_client import AuthenticationClientResponse
@@ -91,19 +92,16 @@ class ISDR(Application):
         if imei:
             ctx_params_fca_children.append(DeviceInfo(children=[Imei(decoded=imei)]))
 
-        server_signed_1, remainder = ServerSigned1().from_tlv(
-            base64.b64decode(authentication.server_signed_1.encode())
+        server_signed_1 = ServerSigned1()
+        server_signed_1.from_tlv(base64.b64decode(authentication.server_signed_1))
+        server_signature_1 = ServerSignature1()
+        server_signature_1.from_tlv(base64.b64decode(authentication.server_signature_1))
+        euicc_ci_pki_to_be_used = EuiccCiPKIdToBeUsed()
+        euicc_ci_pki_to_be_used.from_tlv(
+            base64.b64decode(authentication.euicc_ci_pki_to_be_used)
         )
-        server_signature_1, _ = ServerSignature1().from_tlv(
-            base64.b64decode(authentication.server_signature_1.encode())
-        )
-        euicc_ci_pki_to_be_used, _ = EuiccCiPKIdToBeUsed().from_tlv(
-            base64.b64decode(authentication.euicc_ci_pki_to_be_used.encode())
-        )
-        server_certificate, _ = ServerCertificate().from_tlv(
-            base64.b64decode(authentication.server_certificate.encode())
-        )
-        print(f"Server signed 1: {server_signed_1}, remainder: {remainder}")
+        server_certificate = Certificate()
+        server_certificate.from_tlv(base64.b64decode(authentication.server_certificate))
 
         request = AuthenticateServerRequest(
             children=[
@@ -121,14 +119,20 @@ class ISDR(Application):
             ]
         )
 
+        logging.debug(f"AuthenticateServerRequest: {request.to_val_dict()}")
+
         authenticate_server_response = self.store_data_tlv(
             "authenticate_server",
             request,
             AuthenticateServerResponse(),
         )
-        server_response = authenticate_server_response.to_dict().get(
-            "authenticate_server_response"
-        )
+        server_response = authenticate_server_response.to_dict()
+        logging.debug(f"AuthenticateServerResponse: {server_response}")
+
+        if error := server_response.get("authenticate_response_error"):
+            message = error[1].get("authenticate_error_code")
+            raise Exception(f"AuthenticateServerResponseError: {message}")
+
         return server_response
 
     def download_profile(self, profile: Profile):
@@ -139,7 +143,7 @@ class ISDR(Application):
         logging.info(f"Downloading profile from {smdpp_address}")
         euicc_challenge = self.get_euicc_challenge_raw()
         euicc_info_1 = self.get_euicc_info_1_raw()
-        authentication_response = es9p.initiate_authentication(
+        auth_client_response = es9p.initiate_authentication(
             smdpp_address, euicc_challenge, euicc_info_1
         )
-        self.authenticate_server(authentication_response, profile.matching_id)
+        self.authenticate_server(auth_client_response, profile.matching_id)

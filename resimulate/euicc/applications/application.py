@@ -1,6 +1,5 @@
 from osmocom.tlv import BER_TLV_IE
 from osmocom.utils import h2b
-
 from pySim.utils import sw_match
 
 from resimulate.euicc.exceptions import EuiccException
@@ -35,7 +34,7 @@ class Application:
     ) -> BER_TLV_IE | None:
         command_encoded = request_cls.to_tlv()
 
-        if len(command_encoded) > 255:
+        if len(command_encoded) > 65536:
             raise ValueError("Data too long")
 
         apdu = APDUPacket(cla=0x80, ins=0xE2, p1=0x91, p2=0x00, data=command_encoded)

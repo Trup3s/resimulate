@@ -6,17 +6,17 @@ from resimulate.euicc.es.models.common import TransactionId
 from resimulate.euicc.es.models.ctx_params_1 import CtxParams1
 
 
-class ServerAddress(BER_TLV_IE, tag=0x81):
+class ServerAddress(BER_TLV_IE, tag=0x83):
     _construct = Utf8Adapter(GreedyBytes)
 
 
-class ServerChallenge(BER_TLV_IE, tag=0x82):
+class ServerChallenge(BER_TLV_IE, tag=0x84):
     _construct = HexAdapter(Bytes(16))
 
 
 class EuiccSigned1(
     BER_TLV_IE,
-    tag=0xBF38,
+    tag=0x30,
     nested=[TransactionId, ServerAddress, ServerChallenge, EuiccInfo2, CtxParams1],
 ):
     """

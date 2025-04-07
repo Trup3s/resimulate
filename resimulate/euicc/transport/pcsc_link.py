@@ -2,7 +2,7 @@ import logging
 
 from osmocom.utils import Hexstr, h2i, i2h
 from pySim.transport import LinkBaseTpdu
-from pySim.utils import ResTuple
+from pySim.utils import ResTuple, sw_match
 from smartcard import System
 from smartcard.CardConnection import CardConnection
 from smartcard.CardRequest import CardRequest
@@ -14,10 +14,10 @@ from smartcard.Exceptions import (
 from smartcard.ExclusiveConnectCardConnection import ExclusiveConnectCardConnection
 from smartcard.pcsc.PCSCReader import PCSCReader
 
-from resimulate.euicc.transport.apdu import APDUPacket
 from resimulate.euicc.mutation.engine import MutationEngine
 from resimulate.euicc.recorder.operation import Operation
 from resimulate.euicc.recorder.recorder import OperationRecorder
+from resimulate.euicc.transport.apdu import APDUPacket
 from resimulate.exceptions import PcscError
 
 
@@ -131,7 +131,16 @@ class PcscLink(LinkBaseTpdu):
                 mutated_apdu.to_hex(),
             )
 
-        data, sw = self.send_apdu(mutated_apdu.to_hex())
+        logging.debug("Sending APDU: %s", str(mutated_apdu))
+
+        if not mutated_apdu.is_extended():
+            data, sw = self.send_apdu(mutated_apdu.to_hex())
+        else:
+            logging.debug("Extended APDU detected, sending in chunks")
+            for short_apdu in mutated_apdu.to_short_apdu():
+                data, sw = self.send_apdu(short_apdu.to_hex())
+                if not sw_match(sw, "9000"):
+                    break
 
         if self.recorder:
             operation = Operation(

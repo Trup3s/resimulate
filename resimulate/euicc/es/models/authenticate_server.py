@@ -1,6 +1,5 @@
 from osmocom.construct import Enum, GreedyBytes, HexAdapter, Int8ub
 from osmocom.tlv import BER_TLV_IE
-from pySim.euicc import EuiccCertificate, EumCertificate
 
 from resimulate.euicc.es.models.common import TransactionId
 from resimulate.euicc.es.models.ctx_params_1 import CtxParams1
@@ -13,11 +12,11 @@ class ServerSignature1(BER_TLV_IE, tag=0x5F37):
 
 
 class EuiccCiPKIdToBeUsed(BER_TLV_IE, tag=0x04):
-    _construct = GreedyBytes
+    _construct = HexAdapter(GreedyBytes)
 
 
-class ServerCertificate(BER_TLV_IE, tag=0x30):
-    _construct = GreedyBytes
+class Certificate(BER_TLV_IE, tag=0x30):
+    _construct = HexAdapter(GreedyBytes)
 
 
 class AuthenticateServerRequest(
@@ -27,7 +26,7 @@ class AuthenticateServerRequest(
         ServerSigned1,
         ServerSignature1,
         EuiccCiPKIdToBeUsed,
-        ServerCertificate,
+        Certificate,
         CtxParams1,
     ],
 ):
@@ -45,7 +44,7 @@ class AuthenticateServerRequest(
     pass
 
 
-class AuthenticateErrorCode(BER_TLV_IE, tag=0x81):
+class AuthenticateErrorCode(BER_TLV_IE, tag=0x02):
     """
     SGP.22 Section 5.7.13:: AuthenticateServerResponse
     AuthenticateErrorCode ::= INTEGER {
@@ -62,18 +61,19 @@ class AuthenticateErrorCode(BER_TLV_IE, tag=0x81):
 
     _construct = Enum(
         Int8ub,
-        noError=0,
-        invalidTransactionId=1,
+        invalidCertificate=1,
         invalidSignature=2,
-        invalidCertificate=3,
-        invalidChallenge=4,
-        invalidCertificateChain=5,
-        unknownError=6,
+        unsupportedCurve=3,
+        noSessionContext=4,
+        invalidOid=5,
+        euiccChallengeMismatch=6,
+        ciPKUnknown=7,
+        undefinedError=127,
     )
 
 
 class AuthenticateResponseError(
-    BER_TLV_IE, tag=0x81, nested=[TransactionId, AuthenticateErrorCode]
+    BER_TLV_IE, tag=0xA1, nested=[TransactionId, AuthenticateErrorCode]
 ):
     """
     SGP.22 Section 5.7.13:: AuthenticateServerResponse
@@ -92,15 +92,15 @@ class EuiccSignature1(BER_TLV_IE, tag=0x5F37):
 
 class AuthenticateResponseOk(
     BER_TLV_IE,
-    tag=0x80,
-    nested=[EuiccSigned1, EuiccSignature1, EuiccCertificate, EumCertificate],
+    tag=0xA0,
+    nested=[EuiccSigned1, EuiccSignature1, Certificate, Certificate],
 ):
     """
     SGP.22 Section 5.7.13:: AuthenticateServerResponse
     AuthenticateResponseOk ::= SEQUENCE {
         euiccSigned1 EuiccSigned1, -- Signed information
-        euiccSignature1 [APPLICATION 55] OCTET STRING, --EUICC_Sign1,
-        tag 5F37 euiccCertificate Certificate, -- eUICC Certificate (CERT.EUICC.ECDSA) signed by the EUM
+        euiccSignature1 [APPLICATION 55] OCTET STRING, --EUICC_Sign1,tag 5F37
+        euiccCertificate Certificate, -- eUICC Certificate (CERT.EUICC.ECDSA) signed by the EUM
         eumCertificate Certificate -- EUM Certificate (CERT.EUM.ECDSA) signed by the requested CI
     }
     """
@@ -111,7 +111,7 @@ class AuthenticateResponseOk(
 class AuthenticateServerResponse(
     BER_TLV_IE,
     tag=0xBF38,
-    nested=[AuthenticateResponseError, AuthenticateResponseOk],
+    nested=[AuthenticateResponseOk, AuthenticateResponseError],
 ):
     """
     SGP.22 Section 5.7.13:: AuthenticateServerResponse
