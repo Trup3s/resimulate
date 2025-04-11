@@ -33,21 +33,22 @@ class APDUPacket:
         """Convert the APDU to a list of short APDUs if it exceeds the maximum length."""
         if self.is_extended():
             short_apdus = []
-            offset = 0
+            data_chunks = [
+                self.data[i : i + 255] for i in range(0, len(self.data), 255)
+            ]
 
-            while offset < len(self.data):
-                block_size = min(255, len(self.data) - offset)
-                p2 = len(short_apdus)
+            for index, chunk in enumerate(data_chunks):
+                # p1 is 0x11 until the last chunk, where it is 0x91
+                p1 = 0x11 if index + 1 < len(data_chunks) else 0x91
                 short_apdu = APDUPacket(
                     cla=self.cla,
                     ins=self.ins,
-                    p1=0x11,
-                    p2=p2,
-                    data=self.data[offset : offset + block_size],
+                    p1=p1,
+                    p2=index,
+                    data=chunk,
                     le=min(self.le, 255),
                 )
                 short_apdus.append(short_apdu)
-                offset += block_size
 
             return short_apdus
         return [self]
