@@ -27,6 +27,7 @@ class PcscLink(LinkBaseTpdu):
         mutation_engine: MutationEngine | None = None,
         recorder: OperationRecorder | None = None,
         device_index: int = 0,
+        apdu_data_size: int = 255,
     ):
         super().__init__()
 
@@ -34,12 +35,18 @@ class PcscLink(LinkBaseTpdu):
         if device_index > len(readers):
             raise PcscError(f"Device with index {device_index} not found.")
 
+        if apdu_data_size > 255:
+            logging.warning(
+                "An APDU data size greater than 255 can cause issues with some cards."
+            )
+
         self.pcsc_device = readers[device_index]
         self.card_connection = ExclusiveConnectCardConnection(
             self.pcsc_device.createConnection()
         )
         self.mutation_engine = mutation_engine
         self.recorder = recorder
+        self.apdu_data_size = apdu_data_size
 
     def __str__(self) -> str:
         return "PCSC[%s]" % (self.pcsc_device)
@@ -131,16 +138,16 @@ class PcscLink(LinkBaseTpdu):
                 mutated_apdu.to_hex(),
             )
 
-        logging.debug("Sending APDU: %s", str(mutated_apdu))
+        logging.debug("Sending %s", str(mutated_apdu))
 
-        if not mutated_apdu.is_extended():
-            data, sw = self.send_apdu(mutated_apdu.to_hex())
-        else:
-            logging.debug("Extended APDU detected, sending in chunks")
-            for short_apdu in mutated_apdu.to_short_apdu():
-                data, sw = self.send_apdu(short_apdu.to_hex())
-                if not sw_match(sw, "9000"):
-                    break
+        short_apdus = mutated_apdu.to_short_apdu(data_size=self.apdu_data_size)
+        if len(short_apdus) > 1:
+            logging.debug("Splitting APDU into %d short APDUs", len(short_apdus))
+
+        for short_apdu in short_apdus:
+            data, sw = self.send_apdu(short_apdu.to_hex())
+            if not sw_match(sw, "9000"):
+                break
 
         if self.recorder:
             operation = Operation(

@@ -7,6 +7,7 @@ class Profile:
     matching_id: str
     confirmation_code: str | None = None
 
+    @property
     def full_activation_code(self) -> str:
         return f"LPA:1${self.smdpp_address}${self.matching_id}"
 

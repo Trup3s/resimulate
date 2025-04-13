@@ -29,12 +29,13 @@ class APDUPacket:
     def is_extended(self) -> bool:
         return self.lc > 255 or self.le > 255
 
-    def to_short_apdu(self) -> list["APDUPacket"]:
+    def to_short_apdu(self, data_size: int = 255) -> list["APDUPacket"]:
         """Convert the APDU to a list of short APDUs if it exceeds the maximum length."""
-        if self.is_extended():
+        if self.lc > data_size or self.le > data_size:
             short_apdus = []
             data_chunks = [
-                self.data[i : i + 255] for i in range(0, len(self.data), 255)
+                self.data[i : i + data_size]
+                for i in range(0, len(self.data), data_size)
             ]
 
             for index, chunk in enumerate(data_chunks):
@@ -46,7 +47,7 @@ class APDUPacket:
                     p1=p1,
                     p2=index,
                     data=chunk,
-                    le=min(self.le, 255),
+                    le=min(self.le, data_size),
                 )
                 short_apdus.append(short_apdu)
 

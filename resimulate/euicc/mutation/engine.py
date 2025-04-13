@@ -60,21 +60,22 @@ class MutationEngine:
         mutation_type: MutationType,
     ) -> APDUPacket:
         data = bytearray(apdu.data)
+        mutated_apdu = apdu
 
         match mutation_type:
             case MutationType.BITFLIP:
-                apdu.data = self.bitflip(data)
+                mutated_apdu.data = self.bitflip(data)
 
             case MutationType.RANDOM_BYTE:
-                apdu.data = self.random_byte(data)
+                mutated_apdu.data = self.random_byte(data)
 
             case MutationType.ZERO_BLOCK:
-                apdu.data = self.zero_block(data)
+                mutated_apdu.data = self.zero_block(data)
 
             case MutationType.SHUFFLE_BLOCKS:
-                apdu.data = self.shuffle_blocks(data)
+                mutated_apdu.data = self.shuffle_blocks(data)
 
             case MutationType.TRUNCATE:
-                apdu.data = self.truncate(data)
+                mutated_apdu.data = self.truncate(data)
 
-        return apdu
+        return mutated_apdu

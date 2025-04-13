@@ -1,6 +1,6 @@
-from osmocom.tlv import BER_TLV_IE
-from osmocom.utils import h2b
 from pySim.utils import sw_match
+from osmocom.utils import h2b
+from resimulate.euicc.es.models.common import asn
 
 from resimulate.euicc.exceptions import EuiccException
 from resimulate.euicc.transport.apdu import APDUPacket
@@ -26,13 +26,23 @@ class Application:
     def _merge_dicts(self, dicts: list[dict]) -> dict:
         return {k: v for d in dicts for k, v in d.items()}
 
-    def store_data_tlv(
+    def store_data(
         self,
         caller_func_name: str,
-        request_cls: BER_TLV_IE,
-        response_cls: BER_TLV_IE | None = None,
-    ) -> BER_TLV_IE | None:
-        command_encoded = request_cls.to_tlv()
+        request_type: str | None = None,
+        response_type: str | None = None,
+        request_data: dict | None = None,
+    ) -> dict | tuple | str | None:
+        if request_data is None:
+            request_data = dict()
+
+        command_encoded = request_data
+        if request_type is not None:
+            command_encoded = asn.encode(
+                request_type,
+                request_data,
+                check_constraints=True,
+            )
 
         if len(command_encoded) > 65536:
             raise ValueError("Data too long")
@@ -43,13 +53,10 @@ class Application:
         if not any([sw_match(sw, pattern) for pattern in ["9000", "61??"]]):
             raise EuiccException(sw)
 
-        if response_cls is None:
-            response = request_cls
-        else:
-            response = response_cls
-
         if not data:
             return None
 
-        response.from_tlv(h2b(data))
-        return response
+        if response_type is None:
+            return data
+
+        return asn.decode(response_type, h2b(data), check_constraints=True)

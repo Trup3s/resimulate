@@ -3,6 +3,8 @@
     "apdus",
     "ECASD",
     "ISDR",
+    "pcsc",
+    "Pcsc",
     "replayer",
     "Replayer",
     "resimulate"
@@ -14,5 +16,5 @@
   "files.exclude": {
     "**/__pycache__": true
   },
-  "jupyter.debugJustMyCode": true
+  "jupyter.debugJustMyCode": false
 }

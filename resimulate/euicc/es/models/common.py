@@ -1,8 +1,18 @@
 from typing import Literal
 
-from osmocom.construct import GreedyBytes, HexAdapter
-from osmocom.tlv import BER_TLV_IE
+import asn1tools
 from pydantic import BaseModel, Field
+
+asn = asn1tools.compile_files(
+    [
+        "/home/niklas/Documents/documents/uni/master_thesis/resimulate/asn/pkix1_explicit_88.asn",
+        "/home/niklas/Documents/documents/uni/master_thesis/resimulate/asn/pkix1_implicit_88.asn",
+        "/home/niklas/Documents/documents/uni/master_thesis/resimulate/asn/pe_definitions_v3_4.asn",
+        "/home/niklas/Documents/documents/uni/master_thesis/resimulate/asn/rsp_definitions_v2_6.asn",
+    ],
+    codec="ber",
+    cache_dir=".cache",
+)
 
 
 class FunctionExecutionStatus(BaseModel):
@@ -23,15 +33,3 @@ class SmdppResponse(BaseModel):
     def success(self) -> bool:
         """Check if the authentication response was successful."""
         return self.header.function_execution_status.status == "Executed-Success"
-
-
-class TransactionId(BER_TLV_IE, tag=0x80):
-    _construct = HexAdapter(GreedyBytes)
-
-
-class EuiccInfo1Raw(BER_TLV_IE, tag=0xBF20):
-    _construct = GreedyBytes
-
-
-class EuiccChallengeRaw(BER_TLV_IE, tag=0xBF21):
-    _construct = GreedyBytes
