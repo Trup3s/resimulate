@@ -14,6 +14,7 @@ from resimulate.euicc.es.models.common import asn
 from resimulate.euicc.es.models.initiate_authentication import (
     InitiateAuthenticationResponse,
 )
+from resimulate.euicc.exceptions import ProfileInstallationException
 from resimulate.euicc.models import (
     Profile,
 )
@@ -165,41 +166,94 @@ class ISDR(Application):
         logging.debug(f"BoundProfilePackage: {bpp_decoded}")
 
         logging.debug("Sending initialiseSecureChannelRequest")
-        self.store_data(
+        result = self.store_data(
             "load_bound_profile_package",
             "BoundProfilePackage",
+            response_type="ProfileInstallationResult",
             request_data={
                 "initialiseSecureChannelRequest": bpp_decoded.get(
                     "initialiseSecureChannelRequest"
                 )
             },
         )
+        if result:
+            error_result = (
+                result.get("profileInstallationResultData")
+                .get("finalResult", {})
+                .get("errorResult")
+            )
+            if error_result:
+                raise ProfileInstallationException(error_result)
+
         logging.debug(
             f"Sending firstSequenceOf87: {b2h(bpp_decoded.get('firstSequenceOf87'))}"
         )
-        self.store_data(
+        result = self.store_data(
             "load_bound_profile_package",
+            response_type="ProfileInstallationResult",
             request_data=bpp_decoded.get("firstSequenceOf87"),
         )
+        if result:
+            error_result = (
+                result.get("profileInstallationResultData")
+                .get("finalResult", {})
+                .get("errorResult")
+            )
+            if error_result:
+                raise ProfileInstallationException(error_result)
+
         logging.debug(f"Sending sequenceOf88: {b2h(bpp_decoded.get('sequenceOf88'))}")
-        self.store_data(
+        result = self.store_data(
             "load_bound_profile_package",
+            response_type="ProfileInstallationResult",
             request_data=bpp_decoded.get("sequenceOf88"),
         )
-        if second_sequence_of_87 := bpp_decoded.get("secondSequenceOf87"):
-            logging.debug("Sending secondSequenceOf87")
-            self.store_data(
-                "load_bound_profile_package",
-                request_data=second_sequence_of_87,
+        if result:
+            error_result = (
+                result.get("profileInstallationResultData")
+                .get("finalResult", {})
+                .get("errorResult")
             )
-        logging.debug(f"Sending sequenceOf86: {b2h(bpp_decoded.get('sequenceOf86'))}")
-        self.store_data(
-            "load_bound_profile_package",
-            # response_type="ProfileInstallationResult",
-            request_data=bpp_decoded.get("sequenceOf86"),
-        )
+            if error_result:
+                raise ProfileInstallationException(error_result)
 
-        return bpp_decoded
+        if second_sequence_of_87 := bpp_decoded.get("secondSequenceOf87"):
+            logging.debug(f"Sending secondSequenceOf87: {second_sequence_of_87}")
+            for sequence in second_sequence_of_87:
+                result = self.store_data(
+                    "load_bound_profile_package",
+                    response_type="ProfileInstallationResult",
+                    request_data=second_sequence_of_87,
+                )
+                if result:
+                    error_result = (
+                        result.get("profileInstallationResultData")
+                        .get("finalResult", {})
+                        .get("errorResult")
+                    )
+                    if error_result:
+                        raise ProfileInstallationException(error_result)
+
+        if sequence_of_86 := bpp_decoded.get("sequenceOf86"):
+            logging.debug(f"Sending {len(sequence_of_86)} LoadProfileElements Packets")
+            for sequence in sequence_of_86:
+                result = self.store_data(
+                    "load_bound_profile_package",
+                    response_type="ProfileInstallationResult",
+                    request_data=sequence,
+                )
+                if result:
+                    error_result = (
+                        result.get("profileInstallationResultData")
+                        .get("finalResult", ({}, {}))
+                        .get("errorResult")
+                    )
+                    if error_result:
+                        raise ProfileInstallationException(error_result)
+        else:
+            raise ValueError("sequenceOf86 is missing in the BoundProfilePackage")
+
+        return result.get("finalResult", {}).get("successResult")
 
     def download_profile(self, profile: Profile):
         smdpp_address = profile.smdpp_address
