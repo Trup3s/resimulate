@@ -2,7 +2,7 @@ from osmocom.utils import h2b
 from pySim.utils import sw_match
 
 from resimulate.asn import asn
-from resimulate.euicc.exceptions import EuiccException
+from resimulate.euicc.exceptions import ApduException
 from resimulate.euicc.transport.apdu import APDUPacket
 from resimulate.euicc.transport.pcsc_link import PcscLink
 
@@ -51,7 +51,7 @@ class Application:
         data, sw = self.link.send_apdu_with_mutation(self.name, caller_func_name, apdu)
 
         if not any([sw_match(sw, pattern) for pattern in ["9000", "61??"]]):
-            raise EuiccException(sw)
+            raise ApduException(sw)
 
         if not data:
             return None

@@ -2,7 +2,13 @@ from pySim.utils import sw_match
 
 
 class EuiccException(Exception):
-    """Base class for all exceptions raised by the euicc."""
+    """Base class for all exceptions raised by the eUICC."""
+
+    pass
+
+
+class ApduException(EuiccException):
+    """Exceptions raised by the euicc via APDU commands."""
 
     SW_CODES = {
         "9000": "Normal ending of the command",
@@ -70,17 +76,19 @@ class EuiccException(Exception):
         super().__init__(f"{self.sw} -> {self.message}")
 
 
-class ProfileInstallationException(Exception):
+class ProfileInstallationException(EuiccException):
     """Base class for all exceptions raised by the profile installation."""
 
-    def __init__(self, message=None, bpp_command_id=None):
+    message: str = "An unknown profile installation error occurred"
+
+    def __init__(self, bpp_command_id: int):
         self.bpp_command_id = bpp_command_id
         self.bpp_command = self.get_bpp_command(bpp_command_id)
-        self.message = message or "An unknown profile installation error occurred"
+
         super().__init__(f"{self.bpp_command} -> {self.message}")
 
     @staticmethod
-    def get_bpp_command(command_id):
+    def get_bpp_command(command_id: int) -> str:
         return {
             0: "initialiseSecureChannel",
             1: "configureISDP",
@@ -115,70 +123,69 @@ class ProfileInstallationException(Exception):
         error_reason = error_result.get("errorReason")
         bpp_command_id = error_result.get("bppCommandId")
         exception_class = error_map.get(error_reason, ProfileInstallationException)
-        message = exception_class.__doc__ or "Installation error occurred"
 
-        raise exception_class(message=message, bpp_command_id=bpp_command_id)
+        raise exception_class(bpp_command_id=bpp_command_id)
 
 
 class IncorrectInputValues(ProfileInstallationException):
-    """Incorrect input values"""
+    message = "Incorrect input values"
 
 
 class InvalidSignature(ProfileInstallationException):
-    """Invalid signature"""
+    message = "Invalid signature"
 
 
 class InvalidTransactionID(ProfileInstallationException):
-    """Invalid transaction ID"""
+    message = "Invalid transaction ID"
 
 
 class UnsupportedCRTValues(ProfileInstallationException):
-    """Unsupported CRT values"""
+    message = "Unsupported CRT values"
 
 
 class UnsupportedRemoteOpType(ProfileInstallationException):
-    """Unsupported remote operation type"""
+    message = "Unsupported remote operation type"
 
 
 class UnsupportedProfileClass(ProfileInstallationException):
-    """Unsupported profile class"""
+    message = "Unsupported profile class"
 
 
 class SCP03TStructureError(ProfileInstallationException):
-    """SCP03T structure error"""
+    message = "SCP03T structure error"
 
 
 class SCP03TSecurityError(ProfileInstallationException):
-    """SCP03T security error"""
+    message = "SCP03T security error"
 
 
 class IccidAlreadyExists(ProfileInstallationException):
-    """ICCID already exists on eUICC"""
+    message = "ICCID already exists on eUICC"
 
 
 class InsufficientMemory(ProfileInstallationException):
-    """Insufficient memory for profile"""
+    message = "Insufficient memory for profile"
 
 
 class InstallInterrupted(ProfileInstallationException):
-    """Install failed due to interruption"""
+    message = "Install failed due to interruption"
 
 
 class PEProcessingError(ProfileInstallationException):
-    """PE processing error"""
+    message = "PE processing error"
 
 
 class DataMismatch(ProfileInstallationException):
-    """Data mismatch"""
+    message = "Data mismatch"
 
 
 class InvalidNAAKey(ProfileInstallationException):
-    """Invalid NAA key"""
+    message = "Invalid NAA key"
 
 
 class PPRNotAllowed(ProfileInstallationException):
-    """PPR not allowed"""
+    message = "PPR not allowed"
 
 
 class UnknownInstallError(ProfileInstallationException):
-    """Unknown installation error"""
+    message = "Unknown installation error"
