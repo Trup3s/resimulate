@@ -1,7 +1,7 @@
-from pySim.utils import sw_match
 from osmocom.utils import h2b
-from resimulate.euicc.es.models.common import asn
+from pySim.utils import sw_match
 
+from resimulate.asn import asn
 from resimulate.euicc.exceptions import EuiccException
 from resimulate.euicc.transport.apdu import APDUPacket
 from resimulate.euicc.transport.pcsc_link import PcscLink

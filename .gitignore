@@ -210,4 +210,7 @@ pyrightconfig.json
 ### Ruff ###
 .ruff_cache/
 
+### Asn1tools ###
+.asn_cache/
+
 # End of https://www.toptal.com/developers/gitignore/api/git,visualstudiocode,python

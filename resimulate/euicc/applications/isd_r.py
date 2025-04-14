@@ -4,18 +4,16 @@ from hashlib import sha256
 
 from osmocom.utils import b2h, h2b
 
+from resimulate.asn import asn
 from resimulate.euicc.applications import Application
-from resimulate.euicc.es import es9p
-from resimulate.euicc.es.models.authenticate_client import AuthenticateClientResponse
-from resimulate.euicc.es.models.bound_profile_package import (
-    GetBoundProfilePackageResponse,
-)
-from resimulate.euicc.es.models.common import asn
-from resimulate.euicc.es.models.initiate_authentication import (
-    InitiateAuthenticationResponse,
-)
 from resimulate.euicc.exceptions import ProfileInstallationException
 from resimulate.euicc.models import Profile
+from resimulate.smdp.client import SmdpClient
+from resimulate.smdp.models import (
+    AuthenticateClientResponse,
+    GetBoundProfilePackageResponse,
+    InitiateAuthenticationResponse,
+)
 
 
 class ISDR(Application):
@@ -234,28 +232,27 @@ class ISDR(Application):
         )
 
     def download_profile(self, profile: Profile) -> dict:
-        smdpp_address = profile.smdpp_address
-        if not smdpp_address:
-            smdpp_address = self.get_configured_addresses().get("defaultDpAddress")
+        smdp_address = profile.smdpp_address
+        if not smdp_address:
+            smdp_address = self.get_configured_addresses().get("defaultDpAddress")
 
-        logging.debug(f"Downloading profile from {smdpp_address}")
+        smdp_client = SmdpClient(smdp_address=smdp_address, verify_ssl=False)
+
+        logging.debug(f"Downloading profile from {smdp_address}")
         euicc_challenge = self.get_euicc_challenge()
         euicc_info_1 = self.get_euicc_info_1()
 
-        init_auth = es9p.initiate_authentication(
-            smdpp_address, euicc_challenge, euicc_info_1
-        )
+        init_auth = smdp_client.initiate_authentication(euicc_challenge, euicc_info_1)
         transaction_id = init_auth.transaction_id
 
         authenticate_server = self.authenticate_server(init_auth, profile.matching_id)
-        authenticate_client = es9p.authenticate_client(
-            smdpp_address, transaction_id, authenticate_server
+        authenticate_client = smdp_client.authenticate_client(
+            transaction_id, authenticate_server
         )
         prepare_download = self.prepare_download(
             authenticate_client, profile.confirmation_code
         )
-        get_bpp_response = es9p.get_bound_profile_package(
-            smdpp_address,
+        get_bpp_response = smdp_client.get_bound_profile_package(
             transaction_id,
             prepare_download,
         )
