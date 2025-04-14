@@ -1,5 +1,6 @@
 import itertools
 import logging
+from typing import Type, TypeVar
 from osmocom.utils import i2h, h2b
 
 from pySim.commands import SimCardCommands
@@ -15,8 +16,12 @@ from resimulate.euicc.applications import (
 from resimulate.euicc.transport.apdu import APDUPacket
 from resimulate.euicc.transport.pcsc_link import PcscLink
 
+T = TypeVar("T", bound=Application)
+
 
 class Card:
+    selected_application: Application | None = None
+
     def __init__(self, link: PcscLink):
         self.link = link
         applications: list[Application] = [USIM, ISDR, ECASD, ISDP, ESTK_FWUPD]
@@ -54,21 +59,22 @@ class Card:
         self.link.send_apdu_checksw(apdu.to_hex(), "9000")
         logging.debug("Selected ADF %s", adf)
 
+    def select_application(self, application_cls: Type[T]) -> Application:
+        application = self.supported_applications.get(application_cls)
+        if not application:
+            raise Exception(f"{application_cls.name} application not supported")
+
+        if self.selected_application != application:
+            logging.debug("Selecting application %s", application.name)
+            self.select_adf(application.aid, application.cla_byte)
+            self.selected_application = application
+
+        return application
+
     @property
     def isd_r(self) -> ISDR:
-        isd_r = self.supported_applications.get(ISDR)
-        if not isd_r:
-            raise Exception("ISDR application not supported")
-
-        logging.debug("Selecting ISD-R application")
-        self.select_adf(isd_r.aid, isd_r.cla_byte)
-        return isd_r
+        return self.select_application(ISDR)
 
     @property
     def estk_dfu(self) -> ESTK_FWUPD:
-        estk_dfu = self.supported_applications.get(ESTK_FWUPD)
-        if not estk_dfu:
-            raise Exception("ESTK_DFU application not supported")
-
-        self.select_adf(estk_dfu.aid, estk_dfu.cla_byte)
-        return estk_dfu
+        return self.select_application(ESTK_FWUPD)
