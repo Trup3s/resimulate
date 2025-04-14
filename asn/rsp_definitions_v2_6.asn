@@ -416,11 +416,11 @@ secondSequenceOf87 [2] SEQUENCE OF [7] OCTET STRING OPTIONAL, -- sequence of'87'
 sequenceOf86   [3] SEQUENCE OF [6] OCTET STRING -- sequence of '86' TLVs
 } */
 BoundProfilePackage ::= [54] SEQUENCE { --Tag 'B F36 '
-    initialiseSecureChannelRequest [35] InitialiseSecureChannelRequest OPTIONAL, -- Tag'B F23 '
-    firstSequenceOf87 [0] ANY OPTIONAL, -- sequence of '87' TLVs
-    sequenceOf88   [1] ANY OPTIONAL, -- sequence of '88' TLVs
-    secondSequenceOf87 [2] ANY OPTIONAL, -- sequence of'87' TLVs
-    sequenceOf86   [3] ANY OPTIONAL -- sequence of '86' TLVs
+    initialiseSecureChannelRequest [35] InitialiseSecureChannelRequest, -- Tag'B F23 '
+    firstSequenceOf87 [0] SEQUENCE OF [7] ANY OPTIONAL, -- sequence of '87' TLVs
+    sequenceOf88   [1] SEQUENCE OF [8] ANY OPTIONAL, -- sequence of '88' TLVs
+    secondSequenceOf87 [2] SEQUENCE OF [7] ANY OPTIONAL, -- sequence of'87' TLVs
+    sequenceOf86   [3] SEQUENCE OF [6] ANY OPTIONAL -- sequence of '86' TLVs
 }
 
 --Definition of Get eUICC Challenge --------------------------
@@ -497,7 +497,8 @@ ListNotificationResponse ::= [40] CHOICE { -- Tag 'B F28 '
     listNotificationsResultError INTEGER {undefinedError (127)}
 }
 
-NotificationMetadata ::= [47] SEQUENCE { --Tag 'B F2F 'seqNumber [0] INTEGER,
+NotificationMetadata ::= [47] SEQUENCE { --Tag 'B F2F '
+    seqNumber      [0] INTEGER,
     profileManagementOperation [1] NotificationEvent, /*Only one bit SHALL be set to1*/
     notificationAddress UTF8String, -- FQDN to forward the notification
     iccid          Iccid OPTIONAL
