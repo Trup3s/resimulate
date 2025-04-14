@@ -1,8 +1,8 @@
 import itertools
 import logging
-from typing import Type, TypeVar
-from osmocom.utils import i2h, h2b
+from typing import Type
 
+from osmocom.utils import h2b, i2h
 from pySim.commands import SimCardCommands
 
 from resimulate.euicc.applications import (
@@ -15,8 +15,6 @@ from resimulate.euicc.applications import (
 )
 from resimulate.euicc.transport.apdu import APDUPacket
 from resimulate.euicc.transport.pcsc_link import PcscLink
-
-T = TypeVar("T", bound=Application)
 
 
 class Card:
@@ -59,7 +57,7 @@ class Card:
         self.link.send_apdu_checksw(apdu.to_hex(), "9000")
         logging.debug("Selected ADF %s", adf)
 
-    def select_application(self, application_cls: Type[T]) -> Application:
+    def select_application(self, application_cls: Type[Application]) -> Application:
         application = self.supported_applications.get(application_cls)
         if not application:
             raise Exception(f"{application_cls.name} application not supported")

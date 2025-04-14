@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, Base64Bytes
 
 from resimulate.smdp.exceptions import SmdpException
 
@@ -33,10 +33,10 @@ class SmdpResponse(BaseModel):
 
 
 class AuthenticateClientResponse(SmdpResponse):
-    profile_metadata: str | None = Field(alias="profileMetadata", default=None)
-    smdp_signed_2: str | None = Field(alias="smdpSigned2", default=None)
-    smdp_signature_2: str | None = Field(alias="smdpSignature2", default=None)
-    smdp_certificate: str | None = Field(alias="smdpCertificate", default=None)
+    profile_metadata: Base64Bytes | None = Field(alias="profileMetadata", default=None)
+    smdp_signed_2: Base64Bytes | None = Field(alias="smdpSigned2", default=None)
+    smdp_signature_2: Base64Bytes | None = Field(alias="smdpSignature2", default=None)
+    smdp_certificate: Base64Bytes | None = Field(alias="smdpCertificate", default=None)
 
 
 class GetBoundProfilePackageResponse(SmdpResponse):
@@ -44,9 +44,13 @@ class GetBoundProfilePackageResponse(SmdpResponse):
 
 
 class InitiateAuthenticationResponse(SmdpResponse):
-    server_signed_1: str | None = Field(alias="serverSigned1", default=None)
-    server_signature_1: str | None = Field(alias="serverSignature1", default=None)
-    euicc_ci_pki_to_be_used: str | None = Field(
+    server_signed_1: Base64Bytes | None = Field(alias="serverSigned1", default=None)
+    server_signature_1: Base64Bytes | None = Field(
+        alias="serverSignature1", default=None
+    )
+    euicc_ci_pki_to_be_used: Base64Bytes | None = Field(
         alias="euiccCiPKIdToBeUsed", default=None
     )
-    server_certificate: str | None = Field(alias="serverCertificate", default=None)
+    server_certificate: Base64Bytes | None = Field(
+        alias="serverCertificate", default=None
+    )

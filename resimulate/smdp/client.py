@@ -81,7 +81,7 @@ class SmdpClient(httpx.Client):
 
         profile_metadata = asn.decode(
             "StoreMetadataRequest",
-            base64.b64decode(authentication_response.profile_metadata),
+            authentication_response.profile_metadata,
             check_constraints=True,
         )
         logging.info(

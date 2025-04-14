@@ -9,7 +9,6 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "rich (>=14.0.0,<15.0.0)",
-    "pyshark (>=0.6,<0.7)",
     "argcomplete (>=3.6.2,<4.0.0)",
     "rich-argparse (>=1.7.0,<2.0.0)",
     "pysim @ file:///home/niklas/Documents/documents/uni/master_thesis/pysim",

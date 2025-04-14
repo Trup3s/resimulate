@@ -1,4 +1,3 @@
-import base64
 import logging
 from hashlib import sha256
 
@@ -56,7 +55,7 @@ class ISDR(Application):
         eid_data = self.store_data(
             "get_eid", "GetEuiccDataRequest", "GetEuiccDataResponse", command
         )
-        return eid_data.get("eidValue")
+        return b2h(eid_data.get("eidValue"))
 
     def authenticate_server(
         self,
@@ -69,12 +68,10 @@ class ISDR(Application):
             device_info["imei"] = imei
 
         request = {
-            "serverSigned1": base64.b64decode(authentication.server_signed_1),
-            "serverSignature1": base64.b64decode(authentication.server_signature_1),
-            "euiccCiPKIdToBeUsed": base64.b64decode(
-                authentication.euicc_ci_pki_to_be_used
-            ),
-            "serverCertificate": base64.b64decode(authentication.server_certificate),
+            "serverSigned1": authentication.server_signed_1,
+            "serverSignature1": authentication.server_signature_1,
+            "euiccCiPKIdToBeUsed": authentication.euicc_ci_pki_to_be_used,
+            "serverCertificate": authentication.server_certificate,
             "ctxParams1": (
                 "ctxParamsForCommonAuthentication",
                 {
@@ -111,7 +108,7 @@ class ISDR(Application):
         authenticate_client_response: AuthenticateClientResponse,
         confirmation_code: str | None = None,
     ) -> str:
-        smdp_signed_2 = base64.b64decode(authenticate_client_response.smdp_signed_2)
+        smdp_signed_2 = authenticate_client_response.smdp_signed_2
         smdp_signed_2_decoded = asn.decode("SmdpSigned2", smdp_signed_2)
         cc_required_flag = smdp_signed_2_decoded.get("ccRequiredFlag")
 
@@ -122,12 +119,8 @@ class ISDR(Application):
 
         command = {
             "smdpSigned2": smdp_signed_2,
-            "smdpSignature2": base64.b64decode(
-                authenticate_client_response.smdp_signature_2
-            ),
-            "smdpCertificate": base64.b64decode(
-                authenticate_client_response.smdp_certificate
-            ),
+            "smdpSignature2": authenticate_client_response.smdp_signature_2,
+            "smdpCertificate": authenticate_client_response.smdp_certificate,
         }
         if confirmation_code:
             command["confirmationCode"] = sha256(confirmation_code.encode()).hexdigest()
@@ -153,13 +146,12 @@ class ISDR(Application):
     def load_bound_profile_package(
         self, get_bpp_response: GetBoundProfilePackageResponse
     ) -> dict:
-        bpp = base64.b64decode(get_bpp_response.bound_profile_package)
-        bpp_decoded: dict = asn.decode(
+        bound_profile_package: dict = asn.decode(
             "BoundProfilePackage",
-            bpp,
+            get_bpp_response.bound_profile_package,
             check_constraints=True,
         )
-        logging.debug(f"BoundProfilePackage: {bpp_decoded}")
+        logging.debug(f"BoundProfilePackage: {bound_profile_package}")
 
         def send_and_check(
             data, label: str | None = None, request_type: str | None = None
@@ -181,13 +173,13 @@ class ISDR(Application):
                     "finalResult", (None, None)
                 )
                 if result_type == "errorResult":
-                    raise ProfileInstallationException(data)
+                    ProfileInstallationException.raise_from_result(data)
             return result
 
         # Step 1: initialise secure channel
         send_and_check(
             {
-                "initialiseSecureChannelRequest": bpp_decoded.get(
+                "initialiseSecureChannelRequest": bound_profile_package.get(
                     "initialiseSecureChannelRequest"
                 )
             },
@@ -196,7 +188,7 @@ class ISDR(Application):
         )
 
         # Step 2: Configure ISDP
-        first_sequence_of_87 = bpp_decoded.get("firstSequenceOf87")
+        first_sequence_of_87 = bound_profile_package.get("firstSequenceOf87")
         for index, sequence in enumerate(first_sequence_of_87):
             send_and_check(
                 sequence,
@@ -204,14 +196,14 @@ class ISDR(Application):
             )
 
         # Step 3: Store Metadata
-        sequence_of_88 = bpp_decoded.get("sequenceOf88")
+        sequence_of_88 = bound_profile_package.get("sequenceOf88")
         for index, sequence in enumerate(sequence_of_88):
             send_and_check(
                 sequence, f"sequenceOf88 part {index} of {len(sequence_of_88)}"
             )
 
         # Step 4: Replace Session Keys (optional)
-        if second_sequence := bpp_decoded.get("secondSequenceOf87"):
+        if second_sequence := bound_profile_package.get("secondSequenceOf87"):
             for sequence in second_sequence:
                 send_and_check(
                     sequence,
@@ -220,7 +212,7 @@ class ISDR(Application):
                 )
 
         # Step 5: load profile elements
-        sequence_of_86 = bpp_decoded.get("sequenceOf86")
+        sequence_of_86 = bound_profile_package.get("sequenceOf86")
         final_result = None
         for index, sequence in enumerate(sequence_of_86):
             final_result = send_and_check(

@@ -2,12 +2,19 @@
   "cSpell.words": [
     "apdus",
     "ECASD",
+    "ESTK",
+    "FWUPD",
+    "ISDP",
     "ISDR",
+    "osmocom",
     "pcsc",
     "Pcsc",
     "replayer",
     "Replayer",
-    "resimulate"
+    "resimulate",
+    "smdp",
+    "Smdp",
+    "USIM"
   ],
   "[python]": {
     "editor.formatOnSave": true,

@@ -73,38 +73,112 @@ class EuiccException(Exception):
 class ProfileInstallationException(Exception):
     """Base class for all exceptions raised by the profile installation."""
 
-    ERROR_REASON = {
-        1: "Incorrect input values",
-        2: "Invalid signature",
-        3: "Invalid transaction ID",
-        4: "Unsupported CRT values",
-        5: "Unsupported remote operation type",
-        6: "Unsupported profile class",
-        7: "SCP03T structure error",
-        8: "SCP03T security error",
-        9: "Install failed due to ICCID already exists on eUICC",
-        10: "Install failed due to insufficient memory for profile",
-        11: "Install failed due to interruption",
-        12: "Install failed due to PE processing error",
-        13: "Install failed due to data mismatch",
-        14: "Test profile install failed due to invalid NAA key",
-        15: "PPR not allowed",
-        127: "Install failed due to unknown error",
-    }
+    def __init__(self, message=None, bpp_command_id=None):
+        self.bpp_command_id = bpp_command_id
+        self.bpp_command = self.get_bpp_command(bpp_command_id)
+        self.message = message or "An unknown profile installation error occurred"
+        super().__init__(f"{self.bpp_command} -> {self.message}")
 
-    BPP_COMMAND = {
-        0: "initialiseSecureChannel",
-        1: "configureISDP",
-        2: "storeMetadata",
-        3: "storeMetadata2",
-        4: "replaceSessionKeys",
-        5: "loadProfileElements",
-    }
+    @staticmethod
+    def get_bpp_command(command_id):
+        return {
+            0: "initialiseSecureChannel",
+            1: "configureISDP",
+            2: "storeMetadata",
+            3: "storeMetadata2",
+            4: "replaceSessionKeys",
+            5: "loadProfileElements",
+        }.get(command_id, "UnknownCommand")
 
-    def __init__(self, error_result: dict):
-        self.error_reason = error_result.get("errorReason")
-        self.bpp_command_id = error_result.get("bppCommandId")
+    @staticmethod
+    def raise_from_result(error_result: dict):
+        """Raises the appropriate exception subclass based on the error result."""
+        error_map = {
+            1: IncorrectInputValues,
+            2: InvalidSignature,
+            3: InvalidTransactionID,
+            4: UnsupportedCRTValues,
+            5: UnsupportedRemoteOpType,
+            6: UnsupportedProfileClass,
+            7: SCP03TStructureError,
+            8: SCP03TSecurityError,
+            9: IccidAlreadyExists,
+            10: InsufficientMemory,
+            11: InstallInterrupted,
+            12: PEProcessingError,
+            13: DataMismatch,
+            14: InvalidNAAKey,
+            15: PPRNotAllowed,
+            127: UnknownInstallError,
+        }
 
-        super().__init__(
-            f"{self.BPP_COMMAND.get(self.bpp_command_id)} -> {self.ERROR_REASON.get(self.error_reason)}"
-        )
+        error_reason = error_result.get("errorReason")
+        bpp_command_id = error_result.get("bppCommandId")
+        exception_class = error_map.get(error_reason, ProfileInstallationException)
+        message = exception_class.__doc__ or "Installation error occurred"
+
+        raise exception_class(message=message, bpp_command_id=bpp_command_id)
+
+
+class IncorrectInputValues(ProfileInstallationException):
+    """Incorrect input values"""
+
+
+class InvalidSignature(ProfileInstallationException):
+    """Invalid signature"""
+
+
+class InvalidTransactionID(ProfileInstallationException):
+    """Invalid transaction ID"""
+
+
+class UnsupportedCRTValues(ProfileInstallationException):
+    """Unsupported CRT values"""
+
+
+class UnsupportedRemoteOpType(ProfileInstallationException):
+    """Unsupported remote operation type"""
+
+
+class UnsupportedProfileClass(ProfileInstallationException):
+    """Unsupported profile class"""
+
+
+class SCP03TStructureError(ProfileInstallationException):
+    """SCP03T structure error"""
+
+
+class SCP03TSecurityError(ProfileInstallationException):
+    """SCP03T security error"""
+
+
+class IccidAlreadyExists(ProfileInstallationException):
+    """ICCID already exists on eUICC"""
+
+
+class InsufficientMemory(ProfileInstallationException):
+    """Insufficient memory for profile"""
+
+
+class InstallInterrupted(ProfileInstallationException):
+    """Install failed due to interruption"""
+
+
+class PEProcessingError(ProfileInstallationException):
+    """PE processing error"""
+
+
+class DataMismatch(ProfileInstallationException):
+    """Data mismatch"""
+
+
+class InvalidNAAKey(ProfileInstallationException):
+    """Invalid NAA key"""
+
+
+class PPRNotAllowed(ProfileInstallationException):
+    """PPR not allowed"""
+
+
+class UnknownInstallError(ProfileInstallationException):
+    """Unknown installation error"""
