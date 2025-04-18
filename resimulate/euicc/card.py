@@ -15,12 +15,13 @@ from resimulate.euicc.applications import (
 )
 from resimulate.euicc.transport.apdu import APDUPacket
 from resimulate.euicc.transport.pcsc_link import PcscLink
+from resimulate.util.name_generator import generate_name
 
 
 class Card:
     selected_application: Application | None = None
 
-    def __init__(self, link: PcscLink):
+    def __init__(self, link: PcscLink, name: str | None = None) -> None:
         self.link = link
         applications: list[Application] = [USIM, ISDR, ECASD, ISDP, ESTK_FWUPD]
         cla_bytes = [0x00, 0x01, 0x80, 0x81]
@@ -28,6 +29,7 @@ class Card:
         self.executed_commands = []
         self.supported_applications: dict[type[Application], Application] = {}
         self.atr = self.commands.get_atr()
+        self.name = name or generate_name(self.atr)
 
         for application in applications:
             aids = [application.aid] + application.alternative_aids

@@ -1,3 +1,5 @@
+import inspect
+
 from osmocom.utils import h2b
 from pySim.utils import sw_match
 
@@ -28,10 +30,10 @@ class Application:
 
     def store_data(
         self,
-        caller_func_name: str,
         request_type: str | None = None,
         response_type: str | None = None,
         request_data: dict | None = None,
+        caller_func_name: str | None = None,
     ) -> dict | tuple | str | None:
         if request_data is None:
             request_data = dict()
@@ -46,6 +48,10 @@ class Application:
 
         if len(command_encoded) > 65536:
             raise ValueError("Data too long")
+
+        if not caller_func_name:
+            caller_frame = inspect.stack()[1]
+            caller_func_name = caller_frame.function
 
         apdu = APDUPacket(cla=0x80, ins=0xE2, p1=0x91, p2=0x00, data=command_encoded)
         data, sw = self.link.send_apdu_with_mutation(self.name, caller_func_name, apdu)

@@ -40,7 +40,9 @@ class AuthenticateClientResponse(SmdpResponse):
 
 
 class GetBoundProfilePackageResponse(SmdpResponse):
-    bound_profile_package: str | None = Field(alias="boundProfilePackage", default=None)
+    bound_profile_package: Base64Bytes | None = Field(
+        alias="boundProfilePackage", default=None
+    )
 
 
 class InitiateAuthenticationResponse(SmdpResponse):

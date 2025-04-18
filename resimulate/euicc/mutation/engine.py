@@ -1,9 +1,14 @@
-from resimulate.euicc.transport.apdu import APDUPacket
+from copy import deepcopy
+
 from resimulate.euicc.mutation.types import MutationType
+from resimulate.euicc.transport.apdu import APDUPacket
 
 
 class MutationEngine:
-    def __init__(self, mutation_rate: float = 0.01):
+    def __init__(
+        self,
+        mutation_rate: float = 0.01,
+    ):
         self.mutation_rate = mutation_rate
 
     def bitflip(self, data: bytearray):
@@ -60,7 +65,7 @@ class MutationEngine:
         mutation_type: MutationType,
     ) -> APDUPacket:
         data = bytearray(apdu.data)
-        mutated_apdu = apdu
+        mutated_apdu = deepcopy(apdu)
 
         match mutation_type:
             case MutationType.BITFLIP:

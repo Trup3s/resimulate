@@ -68,6 +68,8 @@ class ApduException(EuiccException):
 
     def __init__(self, sw: str):
         self.sw = sw
+        self.message = "Unknown status word"
+
         for code, message in self.SW_CODES.items():
             if sw_match(sw, code):
                 self.message = message

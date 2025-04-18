@@ -1,21 +1,20 @@
 import logging
 import pickle
-from typing import TYPE_CHECKING
 
 from resimulate.euicc.recorder.operation import Operation
-
-if TYPE_CHECKING:
-    from resimulate.euicc.card import Card
+from resimulate.util.name_generator import generate_name
 
 
 class OperationRecorder:
     def __init__(self):
         self.recordings: list[Operation] = []
+        self.atr = None
+        self.name = None
 
     def record(self, operation: Operation):
         self.recordings.append(operation)
         logging.debug(
-            f"Recorded operation: {operation.func_name} with mutation {operation.mutation_type}"
+            f"Recorded operation: {operation.func_name} with {len(operation.mutation_recordings)} mutations"
         )
 
     def clear(self):
@@ -25,50 +24,68 @@ class OperationRecorder:
         with open(file_path, "wb") as f:
             pickle.dump(self, f)
 
-    def replay(self, file_path: str, card: "Card"):
-        with open(file_path, "rb") as f:
-            recorder: "OperationRecorder" = pickle.load(f)
+    def compare(
+        self,
+        compare_recorder: "OperationRecorder",
+    ):
+        main_name = self.name or generate_name(self.atr)
+        compare_name = compare_recorder.name or generate_name(compare_recorder.atr)
+        differences = {}
 
-        for operation in recorder.recordings:
-            logging.debug(
-                f"Replaying operation: {operation.func_name} with mutation {operation.mutation_type}"
-            )
-            applications_by_name = {
-                app.name: app for app in card.supported_applications.values()
+        logging.debug(f"Comparing {main_name} with {compare_name}")
+
+        for main_operation in self.recordings:
+            operations_by_func_name = {
+                operation.func_name: operation
+                for operation in compare_recorder.recordings
             }
-            application = applications_by_name.get(operation.application_name)
-            if not application:
-                raise Exception(f"Application {operation.application_name} not found")
+            compare_operation = operations_by_func_name.get(main_operation.func_name)
 
-            card.commands.select_adf(application.aid)
-            application.__getattribute__(operation.func_name)(
-                *operation.original_args, **operation.kwargs
-            )
+            if not compare_operation:
+                continue
 
-    def compare(self, main_recording: str, compare_recordings: list[str]):
-        """Compare recordings to find differences in their sw bytes for the same APDU.
+            compare_difference = main_operation.compare(compare_operation)
 
-        Args:
-            main_recording (str): recording to compare against
-            compare_recordings (list[str]): recordings to compare with the main recording
-        """
-        with open(main_recording, "rb") as f:
-            main_recorder: "OperationRecorder" = pickle.load(f)
+            if compare_difference:
+                differences[main_operation.func_name] = compare_difference
+                logging.debug(
+                    f"Found differences in {main_operation.func_name}: {compare_difference}"
+                )
 
+        return {"main": main_name, "compare": compare_name, "differences": differences}
+
+    @staticmethod
+    def compare_multiple(
+        main_recording: "OperationRecorder",
+        compare_recordings: list["OperationRecorder"],
+    ):
+        differences = []
         for compare_recording in compare_recordings:
-            with open(compare_recording, "rb") as f:
+            diff = main_recording.compare(compare_recording)
+
+            if diff["differences"]:
+                differences.append(diff)
+
+        return differences
+
+    @staticmethod
+    def compare_files(main_recording_path: str, compare_recording_paths: list[str]):
+        with open(main_recording_path, "rb") as f:
+            main_recorder: "OperationRecorder" = pickle.load(f)
+            main_recorder.name = main_recording_path
+
+        compare_recordings = []
+        for compare_recording_path in compare_recording_paths:
+            with open(compare_recording_path, "rb") as f:
                 compare_recorder: "OperationRecorder" = pickle.load(f)
+                compare_recorder.name = compare_recording_path
 
-            for main_operation in main_recorder.recordings:
-                for compare_operation in compare_recorder.recordings:
-                    if (
-                        main_operation.func_name != compare_operation.func_name
-                        or main_operation.mutation_type
-                        != compare_operation.mutation_type
-                    ):
-                        continue
+                compare_recordings.append(compare_recorder)
+                logging.debug(
+                    f"Loaded compare recording: {compare_recording_path} with {len(compare_recorder.recordings)} mutations"
+                )
 
-                    if main_operation.response_sw != compare_operation.response_sw:
-                        logging.debug(
-                            f"Difference found in {main_operation.func_name}: {main_operation.response_sw} vs {compare_operation.response_sw}"
-                        )
+        return OperationRecorder.compare_multiple(
+            main_recorder,
+            compare_recordings,
+        )

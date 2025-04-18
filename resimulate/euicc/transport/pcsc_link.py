@@ -15,7 +15,8 @@ from smartcard.ExclusiveConnectCardConnection import ExclusiveConnectCardConnect
 from smartcard.pcsc.PCSCReader import PCSCReader
 
 from resimulate.euicc.mutation.engine import MutationEngine
-from resimulate.euicc.recorder.operation import Operation
+from resimulate.euicc.mutation.types import MutationType
+from resimulate.euicc.recorder.operation import MutationRecording, Operation
 from resimulate.euicc.recorder.recorder import OperationRecorder
 from resimulate.euicc.transport.apdu import APDUPacket
 from resimulate.exceptions import PcscError
@@ -44,6 +45,12 @@ class PcscLink(LinkBaseTpdu):
         self.card_connection = ExclusiveConnectCardConnection(
             self.pcsc_device.createConnection()
         )
+        if recorder:
+            logging.debug("Initializing recorder...")
+            self.connect()
+            recorder.atr = self.get_atr()
+            self.disconnect()
+
         self.mutation_engine = mutation_engine
         self.recorder = recorder
         self.apdu_data_size = apdu_data_size
@@ -129,35 +136,64 @@ class PcscLink(LinkBaseTpdu):
     def send_apdu_with_mutation(
         self, app_name: str, func_name: str, apdu: APDUPacket
     ) -> ResTuple:
-        mutated_apdu = apdu
-        if self.mutation_engine:
-            mutated_apdu = self.mutation_engine.mutate(apdu)
-            logging.debug(
-                "Mutated APDU: %s -> %s",
-                apdu.to_hex(),
-                mutated_apdu.to_hex(),
-            )
+        def handle_apdu_tansmission(apdu: APDUPacket) -> tuple[str | None, str]:
+            logging.debug("Sending %s", str(apdu))
 
-        logging.debug("Sending %s", str(mutated_apdu))
+            short_apdus = apdu.to_short_apdu(data_size=self.apdu_data_size)
+            if len(short_apdus) > 1:
+                logging.debug("Splitting APDU into %d short APDUs", len(short_apdus))
 
-        short_apdus = mutated_apdu.to_short_apdu(data_size=self.apdu_data_size)
-        if len(short_apdus) > 1:
-            logging.debug("Splitting APDU into %d short APDUs", len(short_apdus))
+            for short_apdu in short_apdus:
+                data, sw = self.send_apdu(short_apdu.to_hex())
+                if not sw_match(sw, "9000"):
+                    break
 
-        for short_apdu in short_apdus:
-            data, sw = self.send_apdu(short_apdu.to_hex())
-            if not sw_match(sw, "9000"):
-                break
+            return data, sw
+
+        if not self.mutation_engine:
+            logging.debug("No mutation engine provided, sending original APDU")
+            return handle_apdu_tansmission(apdu)
+
+        recordings = []
+        mutation_types = list(MutationType) + [None]
+        success_data = None
+        success_sw = "0000"
+
+        for mutation_type in mutation_types:
+            if mutation_type is None:
+                mutated_apdu = apdu
+            else:
+                mutated_apdu = self.mutation_engine.mutate(
+                    apdu, mutation_type=mutation_type
+                )
+                logging.debug(
+                    "Testing mutation type: %s | APDU: %s -> %s",
+                    mutation_type,
+                    apdu.to_hex(),
+                    mutated_apdu.to_hex(),
+                )
+
+            data, sw = handle_apdu_tansmission(mutated_apdu)
+            if sw_match(sw, "9000"):
+                success_data = data
+                success_sw = sw
+
+            if mutation_type is not None:
+                recordings.append(
+                    MutationRecording(
+                        mutation_type,
+                        apdu,
+                        mutated_apdu,
+                        sw,
+                    )
+                )
 
         if self.recorder:
             operation = Operation(
                 app_name,
                 func_name,
-                apdu,
-                mutated_apdu,
-                mutation_type=None,
-                response_sw=sw,
+                mutation_recordings=recordings,
             )
             self.recorder.record(operation)
 
-        return data, sw
+        return success_data, success_sw

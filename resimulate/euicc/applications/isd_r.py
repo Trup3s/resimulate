@@ -24,27 +24,21 @@ class ISDR(Application):
 
     def get_euicc_challenge(self) -> str:
         euicc_challenge = self.store_data(
-            "get_euicc_challenge",
             "GetEuiccChallengeRequest",
             "GetEuiccChallengeResponse",
         )
         return b2h(euicc_challenge.get("euiccChallenge"))
 
     def get_euicc_info_1(self) -> dict:
-        command = self.store_data(
-            "get_euicc_info_1", "GetEuiccInfo1Request", "EUICCInfo1"
-        )
+        command = self.store_data("GetEuiccInfo1Request", "EUICCInfo1")
         return command
 
     def get_euicc_info_2(self) -> dict:
-        command = self.store_data(
-            "get_euicc_info_2", "GetEuiccInfo2Request", "EUICCInfo2"
-        )
+        command = self.store_data("GetEuiccInfo2Request", "EUICCInfo2")
         return command
 
     def get_configured_addresses(self) -> dict:
         command = self.store_data(
-            "get_configured_addresses",
             "EuiccConfiguredAddressesRequest",
             "EuiccConfiguredAddressesResponse",
         )
@@ -53,7 +47,7 @@ class ISDR(Application):
     def get_eid(self) -> str:
         command = {"tagList": h2b("5A")}
         eid_data = self.store_data(
-            "get_eid", "GetEuiccDataRequest", "GetEuiccDataResponse", command
+            "GetEuiccDataRequest", "GetEuiccDataResponse", command
         )
         return b2h(eid_data.get("eidValue"))
 
@@ -84,7 +78,6 @@ class ISDR(Application):
         logging.debug(f"AuthenticateServerRequest: {request}")
 
         data = self.store_data(
-            "authenticate_server",
             "AuthenticateServerRequest",
             request_data=request,
         )
@@ -126,7 +119,6 @@ class ISDR(Application):
             command["confirmationCode"] = sha256(confirmation_code.encode()).hexdigest()
 
         data = self.store_data(
-            "prepare_download",
             request_type="PrepareDownloadRequest",
             request_data=command,
         )
@@ -162,7 +154,7 @@ class ISDR(Application):
                 )
 
             result = self.store_data(
-                "load_bound_profile_package",
+                caller_func_name="label",
                 request_type=request_type,
                 response_type="ProfileInstallationResult",
                 request_data=data,
@@ -192,32 +184,27 @@ class ISDR(Application):
         for index, sequence in enumerate(first_sequence_of_87):
             send_and_check(
                 sequence,
-                f"firstSequenceOf87 part {index + 1} of {len(first_sequence_of_87)}",
+                f"firstSequenceOf87_{index + 1}",
             )
 
         # Step 3: Store Metadata
         sequence_of_88 = bound_profile_package.get("sequenceOf88")
         for index, sequence in enumerate(sequence_of_88):
-            send_and_check(
-                sequence, f"sequenceOf88 part {index} of {len(sequence_of_88)}"
-            )
+            send_and_check(sequence, f"sequenceOf88_{index + 1}")
 
         # Step 4: Replace Session Keys (optional)
         if second_sequence := bound_profile_package.get("secondSequenceOf87"):
             for sequence in second_sequence:
                 send_and_check(
                     sequence,
-                    "secondSequenceOf87",
-                    f"secondSequenceOf87 part {index + 1} of {len(sequence)}",
+                    f"secondSequenceOf87_{index + 1}",
                 )
 
         # Step 5: load profile elements
         sequence_of_86 = bound_profile_package.get("sequenceOf86")
         final_result = None
         for index, sequence in enumerate(sequence_of_86):
-            final_result = send_and_check(
-                sequence, f"sequenceOf86 part {index + 1} of {len(sequence_of_86)}"
-            )
+            final_result = send_and_check(sequence, f"sequenceOf86_{index + 1}")
 
         return final_result.get("profileInstallationResultData", {}).get(
             "notificationMetadata"
