@@ -5,8 +5,19 @@ from osmocom.utils import b2h, h2b
 
 from resimulate.asn import asn
 from resimulate.euicc.applications import Application
-from resimulate.euicc.exceptions import ProfileInstallationException
-from resimulate.euicc.models import Profile
+from resimulate.euicc.exceptions import (
+    NotificationException,
+    ProfileInstallationException,
+    ProfileInteractionException,
+)
+from resimulate.euicc.models import ActivationProfile
+from resimulate.euicc.models.notification import (
+    Notification,
+    NotificationType,
+    OtherSignedNotification,
+    ProfileInstallationResult,
+)
+from resimulate.euicc.models.profile_info import Profile, ProfileClass
 from resimulate.smdp.client import SmdpClient
 from resimulate.smdp.models import (
     AuthenticateClientResponse,
@@ -168,6 +179,8 @@ class ISDR(Application):
                     ProfileInstallationException.raise_from_result(data)
             return result
 
+        # TODO: Move functions to isd-p
+
         # Step 1: initialise secure channel
         send_and_check(
             {
@@ -210,7 +223,175 @@ class ISDR(Application):
             "notificationMetadata"
         )
 
-    def download_profile(self, profile: Profile) -> dict:
+    def enable_profile(
+        self, iccid: str | None = None, isdp_aid: str | None = None
+    ) -> bool:
+        profile_identifier = {}
+        if iccid:
+            profile_identifier = ("iccid", h2b(iccid))
+
+        if isdp_aid:
+            profile_identifier = ("isdpAid", h2b(isdp_aid))
+
+        response = self.store_data(
+            "EnableProfileRequest",
+            "EnableProfileResponse",
+            {"profileIdentifier": profile_identifier, "refreshFlag": True},
+        )
+        logging.debug(f"EnableProfileResponse: {response}")
+
+        if response["enableResult"] != 0:
+            ProfileInteractionException.raise_from_result(response["enableResult"])
+
+        return True
+
+    def disable_profile(
+        self, iccid: str | None = None, isdp_aid: str | None = None
+    ) -> bool:
+        profile_identifier = None
+        if iccid:
+            profile_identifier = ("iccid", h2b(iccid))
+
+        if isdp_aid:
+            profile_identifier = ("isdpAid", h2b(isdp_aid))
+
+        response = self.store_data(
+            "DisableProfileRequest",
+            "DisableProfileResponse",
+            {"profileIdentifier": profile_identifier, "refreshFlag": True},
+        )
+        logging.debug(f"DisableProfileResponse: {response}")
+
+        if response["disableResult"] != 0:
+            ProfileInteractionException.raise_from_result(response["disableResult"])
+
+        return True
+
+    def delete_profile(
+        self, iccid: str | None = None, isdp_aid: str | None = None
+    ) -> bool:
+        profile_identifier = {}
+        if iccid:
+            profile_identifier = ("iccid", h2b(iccid))
+
+        if isdp_aid:
+            profile_identifier = ("isdpAid", h2b(isdp_aid))
+
+        response = self.store_data(
+            "DeleteProfileRequest",
+            "DeleteProfileResponse",
+            {"profileIdentifier": profile_identifier},
+        )
+        logging.debug(f"DeleteProfileResponse: {response}")
+
+        if response["deleteResult"] != 0:
+            ProfileInteractionException.raise_from_result(response["deleteResult"])
+
+        return True
+
+    def list_profiles(
+        self,
+        isdp_aid: str | None = None,
+        iccid: str | None = None,
+        profile_class: ProfileClass | None = None,
+        tags: list[str] | None = None,
+    ) -> list[Profile]:
+        search_criteria = {}
+        if isdp_aid:
+            if len(isdp_aid) <= 16:
+                raise ValueError("IDP AID must be at least 16 characters long.")
+
+            search_criteria["isdpAid"] = isdp_aid
+
+        if iccid:
+            if len(iccid) != 10:
+                raise ValueError("ICCID must be 10 digits long.")
+
+            search_criteria["iccid"] = iccid
+
+        if profile_class:
+            search_criteria["profileClass"] = profile_class.value
+
+        if tags:
+            # TODO: Check how properly send tags
+            search_criteria["tags"] = tags
+
+        response = self.store_data(
+            "ProfileInfoListRequest",
+            "ProfileInfoListResponse",
+        )
+
+        logging.debug(f"ListProfilesResponse: {response}")
+
+        key, data = response
+        if key == "profileInfoListError":
+            message = "Incorrect input values" if data == 1 else "Unknown error"
+            raise NotificationException(message)
+
+        return [Profile(**profile) for profile in data]
+
+    def list_notifications(
+        self, notification_type: NotificationType | None = None
+    ) -> list[Notification]:
+        filter = None
+        if notification_type:
+            filter = ("profileManagementOperation", notification_type.value)
+
+        response = self.store_data(
+            "ListNotificationRequest",
+            "ListNotificationResponse",
+            filter,
+        )
+        logging.debug(f"ListNotificationsResponse: {response}")
+
+        key, data = response
+        if key == "notificationError":
+            raise NotificationException.raise_from_result(data)
+
+        return [Notification(**notification) for notification in data]
+
+    def retrieve_notification_list(
+        self,
+        seq_number: int | None = None,
+        notification_type: NotificationType | None = None,
+    ) -> list[ProfileInstallationResult | OtherSignedNotification]:
+        search_criteria = None
+        if seq_number:
+            search_criteria = {"searchCriteria": ("seqNumber", seq_number)}
+
+        if notification_type:
+            search_criteria = {
+                "searchCriteria": (
+                    "profileManagementOperation",
+                    notification_type.value,
+                )
+            }
+
+        response = self.store_data(
+            "RetrieveNotificationsListRequest",
+            "RetrieveNotificationsListResponse",
+            search_criteria,
+        )
+        logging.debug(f"RetrieveNotificationsListResponse: {response}")
+
+        key, data = response
+        if key == "notificationsListResultError":
+            raise ProfileInteractionException.raise_from_result(data)
+
+        notifications = []
+        for key, notification in data:
+            if key == "profileInstallationResult":
+                notifications.append(
+                    ProfileInstallationResult(**notification, raw_data=notification)
+                )
+            elif key == "otherSignedNotification":
+                notifications.append(
+                    OtherSignedNotification(**notification, raw_data=notification)
+                )
+
+        return notifications
+
+    def download_profile(self, profile: ActivationProfile) -> dict:
         smdp_address = profile.smdpp_address
         if not smdp_address:
             smdp_address = self.get_configured_addresses().get("defaultDpAddress")

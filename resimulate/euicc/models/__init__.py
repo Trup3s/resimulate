@@ -1,3 +1,3 @@
-from resimulate.euicc.models.profile import Profile
+from resimulate.euicc.models.activiation_profile import ActivationProfile
 
-__all__ = ["Profile"]
+__all__ = ["ActivationProfile"]

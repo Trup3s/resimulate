@@ -5,6 +5,10 @@ import httpx
 from osmocom.utils import b2h, h2b
 
 from resimulate.asn import asn
+from resimulate.euicc.models.notification import (
+    OtherSignedNotification,
+    ProfileInstallationResult,
+)
 from resimulate.smdp.exceptions import SmdpException
 from resimulate.smdp.models import (
     AuthenticateClientResponse,
@@ -115,3 +119,32 @@ class SmdpClient(httpx.Client):
         bpp_response.raise_on_error()
 
         return bpp_response
+
+    def handle_notification(
+        self, pending_notification: ProfileInstallationResult | OtherSignedNotification
+    ) -> None:
+        data = pending_notification.model_dump()
+        if isinstance(pending_notification, ProfileInstallationResult):
+            notification = {"profileInstallationResult": data}
+        else:
+            notification = {"otherSignedNotification": data}
+
+        encoded_notification = asn.encode(
+            "PendingNotification",
+            notification,
+            check_constraints=True,
+        )
+        b64_pending_notification = base64.b64encode(h2b(encoded_notification)).decode()
+
+        response = self.post(
+            url="/gsma/rsp2/es9plus/handleNotification",
+            json={
+                "pendingNotification": b64_pending_notification,
+            },
+        )
+        if response.status_code != 200:
+            raise SmdpException(
+                f"Failed to handle notification: {response.status_code} - {response.text}"
+            )
+
+        logging.debug(f"Handled notification: {response.json()}")

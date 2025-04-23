@@ -191,3 +191,71 @@ class PPRNotAllowed(ProfileInstallationException):
 
 class UnknownInstallError(ProfileInstallationException):
     message = "Unknown installation error"
+
+
+class NotificationException(EuiccException):
+    """Base class for all exceptions raised by the notification handling."""
+
+    message: str = "An unknown notification error occurred"
+
+    def __init__(self, message: str | None = None):
+        if message:
+            self.message = message
+
+        super().__init__(self.message)
+
+    def raise_from_result(result: int):
+        """Raises the appropriate exception subclass based on the result."""
+        error_map = {
+            127: UndefinedNotificationError,
+        }
+
+        exception_class = error_map.get(result, NotificationException)
+
+        raise exception_class()
+
+
+class UndefinedNotificationError(NotificationException):
+    message = "Undefined notification error occurred"
+
+
+class ProfileInteractionException(EuiccException):
+    """Base class for all exceptions raised by the profile handling."""
+
+    message: str = "An unknown profile interaction error occurred"
+
+    def __init__(self, message: str | None = None):
+        if message:
+            self.message = message
+
+        super().__init__(self.message)
+
+    @staticmethod
+    def raise_from_result(result: int):
+        """Raises the appropriate exception subclass based on the result."""
+        error_map = {
+            1: IccidOrAidNotFound,
+            2: ProfileNotInEnabledState,
+            3: DisallowedByPolicy,
+            4: CatBusy,
+        }
+
+        exception_class = error_map.get(result, ProfileInteractionException)
+
+        raise exception_class()
+
+
+class IccidOrAidNotFound(ProfileInteractionException):
+    message = "ICCID or AID not found"
+
+
+class ProfileNotInEnabledState(ProfileInteractionException):
+    message = "Profile not in enabled state"
+
+
+class DisallowedByPolicy(ProfileInteractionException):
+    message = "Operation disallowed by policy"
+
+
+class CatBusy(ProfileInteractionException):
+    message = "CAT is busy"
