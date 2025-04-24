@@ -146,7 +146,7 @@ class ISDR(Application):
 
     def load_bound_profile_package(
         self, get_bpp_response: GetBoundProfilePackageResponse
-    ) -> dict:
+    ) -> ProfileInstallationResult:
         bound_profile_package: dict = asn.decode(
             "BoundProfilePackage",
             get_bpp_response.bound_profile_package,
@@ -217,9 +217,7 @@ class ISDR(Application):
         for index, sequence in enumerate(sequence_of_86):
             final_result = send_and_check(sequence, f"sequenceOf86_{index + 1}")
 
-        return final_result.get("profileInstallationResultData", {}).get(
-            "notificationMetadata"
-        )
+        return ProfileInstallationResult(**final_result)
 
     def enable_profile(
         self, iccid: str | None = None, isdp_aid: str | None = None
@@ -268,7 +266,7 @@ class ISDR(Application):
     def delete_profile(
         self, iccid: str | None = None, isdp_aid: str | None = None
     ) -> bool:
-        profile_identifier = {}
+        profile_identifier = None
         if iccid:
             profile_identifier = ("iccid", bytes.fromhex(iccid))
 
@@ -278,7 +276,7 @@ class ISDR(Application):
         response = self.store_data(
             "DeleteProfileRequest",
             "DeleteProfileResponse",
-            {"profileIdentifier": profile_identifier},
+            profile_identifier,
         )
         logging.debug(f"DeleteProfileResponse: {response}")
 
@@ -379,13 +377,9 @@ class ISDR(Application):
         notifications = []
         for key, notification in data:
             if key == "profileInstallationResult":
-                notifications.append(
-                    ProfileInstallationResult(**notification, raw_data=notification)
-                )
+                notifications.append(ProfileInstallationResult(**notification))
             elif key == "otherSignedNotification":
-                notifications.append(
-                    OtherSignedNotification(**notification, raw_data=notification)
-                )
+                notifications.append(OtherSignedNotification(**notification))
 
         return notifications
 
@@ -431,7 +425,20 @@ class ISDR(Application):
 
         return processed_notification_seq_numbers
 
-    def download_profile(self, profile: ActivationProfile) -> dict:
+    def set_nickname(self, iccid: str, nickname: str) -> bool:
+        response = self.store_data(
+            "InformationSetNicknameRequest",
+            "SetNicknameResponse",
+            {"iccid": bytes.fromhex(iccid), "profileNickname": nickname},
+        )
+        logging.debug(f"SetNicknameResponse: {response}")
+
+        if response["setNicknameResult"] != 0:
+            ProfileInteractionException.raise_from_result(response["setNicknameResult"])
+
+        return True
+
+    def download_profile(self, profile: ActivationProfile) -> ProfileInstallationResult:
         smdp_address = profile.smdpp_address
         if not smdp_address:
             smdp_address = self.get_configured_addresses().get("defaultDpAddress")

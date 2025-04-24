@@ -15,6 +15,7 @@ class NotificationType(int, Enum):
     ENABLE = 1
     DISABLE = 2
     DELETE = 3
+    UNKNOWN = 4
 
 
 class Notification(EuiccModel):

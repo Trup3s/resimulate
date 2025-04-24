@@ -30,7 +30,7 @@ Octet2 ::= OCTET STRING (SIZE (2))
 VersionType ::= OCTET STRING (SIZE (3)) -- major/minor/revision version are coded as binary value on byte 1 / 2 / 3, e.g.'02 00 0C' for v2.0.12.
 
 -- If revision is not used (e.g. v2.1), byte 3 SHALL be set to '00'.
-Iccid ::= [APPLICATION 26] OCTET STRING (SIZE (10)) -- ICCID as coded in EFiccid,corresponding tag is '5A'
+Iccid ::= [APPLICATION 26] OCTET STRING (SIZE (10)) -- ICCID as coded in EF iccid, corresponding tag is '5A'
 
 RemoteOpId ::= [2] INTEGER {installBoundProfilePackage (1)}
 
@@ -601,11 +601,17 @@ PendingNotification ::= CHOICE {
     otherSignedNotification OtherSignedNotification
 }
 
+/* OtherSignedNotification ::= SEQUENCE {
+tbsOtherNotification NotificationMetadata,
+euiccNotificationSignature [APPLICATION 55] OCTET STRING, -- eUICC signature of tbsOtherNotification, Tag '5F37'
+euiccCertificate Certificate, --eUICC Certificate (CERT.EUICC.ECDSA) signed by the EUM
+eumCertificate Certificate -- EUM Certificate (CERT.EUM.ECDSA) signed by the requested CI
+} */
 OtherSignedNotification ::= SEQUENCE {
     tbsOtherNotification NotificationMetadata,
     euiccNotificationSignature [APPLICATION 55] OCTET STRING, -- eUICC signature of tbsOtherNotification, Tag '5F37'
-    euiccCertificate Certificate, --eUICC Certificate (CERT.EUICC.ECDSA) signed by the EUM
-    eumCertificate Certificate -- EUM Certificate (CERT.EUM.ECDSA) signed by the requested CI
+    euiccCertificate ANY,  --eUICC Certificate (CERT.EUICC.ECDSA) signed by the EUM
+    eumCertificate ANY     -- EUM Certificate (CERT.EUM.ECDSA) signed by the requested CI
 }
 
 -- Definition of notificationSent

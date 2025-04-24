@@ -243,6 +243,7 @@ class ProfileInteractionException(EuiccException):
             2: ProfileNotInEnabledState,
             3: DisallowedByPolicy,
             4: CatBusy,
+            127: UndefinedProfileInteractionError,
         }
 
         exception_class = error_map.get(result, ProfileInteractionException)
@@ -264,3 +265,7 @@ class DisallowedByPolicy(ProfileInteractionException):
 
 class CatBusy(ProfileInteractionException):
     message = "CAT is busy"
+
+
+class UndefinedProfileInteractionError(ProfileInteractionException):
+    message = "Undefined profile interaction error occurred"
