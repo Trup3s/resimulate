@@ -234,27 +234,14 @@ class ProfileInstallationException(ResultBaseException):
         raise exception_class(bpp_command_id=bpp_command_id)
 
 
-class NotificationException(EuiccException):
+class NotificationException(ResultBaseException):
     """Base class for all exceptions raised by the notification handling."""
 
     message: str = "An unknown notification error occurred"
-
-    def __init__(self, message: str | None = None):
-        if message:
-            self.message = message
-
-        super().__init__(self.message)
-
-    def raise_from_result(result: int):
-        """Raises the appropriate exception subclass based on the result."""
-        error_map = {
-            1: NothingToDeleteError,
-            127: UndefinedError,
-        }
-
-        exception_class = error_map.get(result, NotificationException)
-
-        raise exception_class()
+    error_map = {
+        1: NothingToDeleteError,
+        127: UndefinedError,
+    }
 
 
 class ProfileInteractionException(ResultBaseException):
