@@ -1,0 +1,7 @@
+from enum import Enum
+
+
+class ResetOption(int, Enum):
+    DELETE_OPERATIONAL_PROFILES = 0
+    DELETE_FIELD_LOADED_TEST_PROFILES = 1
+    RESET_DEFAULT_SMDP_ADDRESS = 2
