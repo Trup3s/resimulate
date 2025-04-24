@@ -78,10 +78,133 @@ class ApduException(EuiccException):
         super().__init__(f"{self.sw} -> {self.message}")
 
 
-class ProfileInstallationException(EuiccException):
+class ResultBaseException(EuiccException):
+    """Base class for all exceptions raised by the result handling."""
+
+    message: str = "An unknown result error occurred"
+    error_map: dict[int, str]
+
+    def __init__(self, message: str | None = None):
+        if message:
+            self.message = message
+
+        super().__init__(self.message)
+
+    @classmethod
+    def raise_from_result(cls, result: int):
+        """Raises the appropriate exception subclass based on the result."""
+        exception_class = cls.error_map.get(result, cls)
+        exception_class.__bases__ = (cls,)
+
+        raise exception_class()
+
+
+class IncorrectInputValues(EuiccException):
+    message = "Incorrect input values"
+
+
+class InvalidSignature(EuiccException):
+    message = "Invalid signature"
+
+
+class InvalidTransactionID(EuiccException):
+    message = "Invalid transaction ID"
+
+
+class UnsupportedCRTValues(EuiccException):
+    message = "Unsupported CRT values"
+
+
+class UnsupportedRemoteOpType(EuiccException):
+    message = "Unsupported remote operation type"
+
+
+class UnsupportedProfileClass(EuiccException):
+    message = "Unsupported profile class"
+
+
+class SCP03TStructureError(EuiccException):
+    message = "SCP03T structure error"
+
+
+class SCP03TSecurityError(EuiccException):
+    message = "SCP03T security error"
+
+
+class IccidAlreadyExists(EuiccException):
+    message = "ICCID already exists on eUICC"
+
+
+class InsufficientMemory(EuiccException):
+    message = "Insufficient memory for profile"
+
+
+class InstallInterrupted(EuiccException):
+    message = "Install failed due to interruption"
+
+
+class PEProcessingError(EuiccException):
+    message = "PE processing error"
+
+
+class DataMismatch(EuiccException):
+    message = "Data mismatch"
+
+
+class InvalidNAAKey(EuiccException):
+    message = "Invalid NAA key"
+
+
+class PPRNotAllowed(EuiccException):
+    message = "PPR not allowed"
+
+
+class UndefinedError(EuiccException):
+    message = "Unknown installation error"
+
+
+class NothingToDeleteError(EuiccException):
+    message = "Nothing to delete"
+
+
+class IccidOrAidNotFound(EuiccException):
+    message = "ICCID or AID not found"
+
+
+class ProfileNotInEnabledState(EuiccException):
+    message = "Profile not in enabled state"
+
+
+class DisallowedByPolicy(EuiccException):
+    message = "Operation disallowed by policy"
+
+
+class CatBusy(EuiccException):
+    message = "CAT is busy"
+
+
+class ProfileInstallationException(ResultBaseException):
     """Base class for all exceptions raised by the profile installation."""
 
     message: str = "An unknown profile installation error occurred"
+    error_map = {
+        1: IncorrectInputValues,
+        2: InvalidSignature,
+        3: InvalidTransactionID,
+        4: UnsupportedCRTValues,
+        5: UnsupportedRemoteOpType,
+        6: UnsupportedProfileClass,
+        7: SCP03TStructureError,
+        8: SCP03TSecurityError,
+        9: IccidAlreadyExists,
+        10: InsufficientMemory,
+        11: InstallInterrupted,
+        12: PEProcessingError,
+        13: DataMismatch,
+        14: InvalidNAAKey,
+        15: PPRNotAllowed,
+        127: UndefinedError,
+    }
 
     def __init__(self, bpp_command_id: int):
         self.bpp_command_id = bpp_command_id
@@ -100,97 +223,15 @@ class ProfileInstallationException(EuiccException):
             5: "loadProfileElements",
         }.get(command_id, "UnknownCommand")
 
-    @staticmethod
-    def raise_from_result(error_result: dict):
+    @classmethod
+    def raise_from_result(cls, error_result: dict):
         """Raises the appropriate exception subclass based on the error result."""
-        error_map = {
-            1: IncorrectInputValues,
-            2: InvalidSignature,
-            3: InvalidTransactionID,
-            4: UnsupportedCRTValues,
-            5: UnsupportedRemoteOpType,
-            6: UnsupportedProfileClass,
-            7: SCP03TStructureError,
-            8: SCP03TSecurityError,
-            9: IccidAlreadyExists,
-            10: InsufficientMemory,
-            11: InstallInterrupted,
-            12: PEProcessingError,
-            13: DataMismatch,
-            14: InvalidNAAKey,
-            15: PPRNotAllowed,
-            127: UnknownInstallError,
-        }
 
         error_reason = error_result.get("errorReason")
         bpp_command_id = error_result.get("bppCommandId")
-        exception_class = error_map.get(error_reason, ProfileInstallationException)
+        exception_class = cls.error_map.get(error_reason, cls)
 
         raise exception_class(bpp_command_id=bpp_command_id)
-
-
-class IncorrectInputValues(ProfileInstallationException):
-    message = "Incorrect input values"
-
-
-class InvalidSignature(ProfileInstallationException):
-    message = "Invalid signature"
-
-
-class InvalidTransactionID(ProfileInstallationException):
-    message = "Invalid transaction ID"
-
-
-class UnsupportedCRTValues(ProfileInstallationException):
-    message = "Unsupported CRT values"
-
-
-class UnsupportedRemoteOpType(ProfileInstallationException):
-    message = "Unsupported remote operation type"
-
-
-class UnsupportedProfileClass(ProfileInstallationException):
-    message = "Unsupported profile class"
-
-
-class SCP03TStructureError(ProfileInstallationException):
-    message = "SCP03T structure error"
-
-
-class SCP03TSecurityError(ProfileInstallationException):
-    message = "SCP03T security error"
-
-
-class IccidAlreadyExists(ProfileInstallationException):
-    message = "ICCID already exists on eUICC"
-
-
-class InsufficientMemory(ProfileInstallationException):
-    message = "Insufficient memory for profile"
-
-
-class InstallInterrupted(ProfileInstallationException):
-    message = "Install failed due to interruption"
-
-
-class PEProcessingError(ProfileInstallationException):
-    message = "PE processing error"
-
-
-class DataMismatch(ProfileInstallationException):
-    message = "Data mismatch"
-
-
-class InvalidNAAKey(ProfileInstallationException):
-    message = "Invalid NAA key"
-
-
-class PPRNotAllowed(ProfileInstallationException):
-    message = "PPR not allowed"
-
-
-class UnknownInstallError(ProfileInstallationException):
-    message = "Unknown installation error"
 
 
 class NotificationException(EuiccException):
@@ -208,7 +249,7 @@ class NotificationException(EuiccException):
         """Raises the appropriate exception subclass based on the result."""
         error_map = {
             1: NothingToDeleteError,
-            127: UndefinedNotificationError,
+            127: UndefinedError,
         }
 
         exception_class = error_map.get(result, NotificationException)
@@ -216,56 +257,25 @@ class NotificationException(EuiccException):
         raise exception_class()
 
 
-class NothingToDeleteError(NotificationException):
-    message = "Nothing to delete, sequence number not found"
-
-
-class UndefinedNotificationError(NotificationException):
-    message = "Undefined notification error occurred"
-
-
-class ProfileInteractionException(EuiccException):
+class ProfileInteractionException(ResultBaseException):
     """Base class for all exceptions raised by the profile handling."""
 
     message: str = "An unknown profile interaction error occurred"
-
-    def __init__(self, message: str | None = None):
-        if message:
-            self.message = message
-
-        super().__init__(self.message)
-
-    @staticmethod
-    def raise_from_result(result: int):
-        """Raises the appropriate exception subclass based on the result."""
-        error_map = {
-            1: IccidOrAidNotFound,
-            2: ProfileNotInEnabledState,
-            3: DisallowedByPolicy,
-            4: CatBusy,
-            127: UndefinedProfileInteractionError,
-        }
-
-        exception_class = error_map.get(result, ProfileInteractionException)
-
-        raise exception_class()
+    error_map = {
+        1: IccidOrAidNotFound,
+        2: ProfileNotInEnabledState,
+        3: DisallowedByPolicy,
+        4: CatBusy,
+        127: UndefinedError,
+    }
 
 
-class IccidOrAidNotFound(ProfileInteractionException):
-    message = "ICCID or AID not found"
+class EuiccMemoryResetException(ResultBaseException):
+    """Base class for all exceptions raised by the euicc memory reset."""
 
-
-class ProfileNotInEnabledState(ProfileInteractionException):
-    message = "Profile not in enabled state"
-
-
-class DisallowedByPolicy(ProfileInteractionException):
-    message = "Operation disallowed by policy"
-
-
-class CatBusy(ProfileInteractionException):
-    message = "CAT is busy"
-
-
-class UndefinedProfileInteractionError(ProfileInteractionException):
-    message = "Undefined profile interaction error occurred"
+    message: str = "An unknown euicc memory reset error occurred"
+    error_map = {
+        1: NothingToDeleteError,
+        5: CatBusy,
+        127: UndefinedError,
+    }

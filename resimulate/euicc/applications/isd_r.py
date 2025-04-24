@@ -4,6 +4,8 @@ from hashlib import sha256
 from resimulate.asn import asn
 from resimulate.euicc.applications import Application
 from resimulate.euicc.exceptions import (
+    EuiccException,
+    EuiccMemoryResetException,
     NotificationException,
     ProfileInstallationException,
     ProfileInteractionException,
@@ -16,6 +18,7 @@ from resimulate.euicc.models.notification import (
     ProfileInstallationResult,
 )
 from resimulate.euicc.models.profile_info import Profile, ProfileClass
+from resimulate.euicc.models.reset_option import ResetOption
 from resimulate.smdp.client import SmdpClient
 from resimulate.smdp.models import (
     AuthenticateClientResponse,
@@ -435,6 +438,34 @@ class ISDR(Application):
 
         if response["setNicknameResult"] != 0:
             ProfileInteractionException.raise_from_result(response["setNicknameResult"])
+
+        return True
+
+    def set_default_dp_address(self, address: str) -> bool:
+        response = self.store_data(
+            "SetDefaultDpAddressRequest",
+            "SetDefaultDpAddressResponse",
+            {"defaultDpAddress": address},
+        )
+        logging.debug(f"SetDefaultDpAddressResponse: {response}")
+
+        if response["setDefaultDpAddressResult"] != 0:
+            raise EuiccException(
+                f"Failed to set default DP address: {response['setDefaultDpAddressResult']}"
+            )
+
+        return True
+
+    def reset_euicc_memory(self, reset_option: ResetOption):
+        response = self.store_data(
+            "EuiccMemoryResetRequest",
+            "EuiccMemoryResetResponse",
+            {"resetOptions": (b"\x80", reset_option.value)},
+        )
+        logging.debug(f"ResetEuiccMemoryResponse: {response}")
+
+        if response["resetResult"] != 0:
+            EuiccMemoryResetException.raise_from_result(response["resetResult"])
 
         return True
 
