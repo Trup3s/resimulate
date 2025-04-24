@@ -1,9 +1,13 @@
 from enum import Enum
-from typing import Any, Union
+from typing import Literal, Union
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 from resimulate.euicc.encoder import HexStr
+
+
+class EuiccModel(BaseModel):
+    model_config = ConfigDict(serialize_by_alias=True)
 
 
 class NotificationType(int, Enum):
@@ -13,20 +17,11 @@ class NotificationType(int, Enum):
     DELETE = 3
 
 
-class Notification(BaseModel):
+class Notification(EuiccModel):
     seq_number: int = Field(alias="seqNumber")
-    event: NotificationType = Field(alias="profileManagementOperation")
+    event: tuple[bytes, NotificationType] = Field(alias="profileManagementOperation")
     address: str = Field(alias="notificationAddress")
     iccid: HexStr | None = Field(alias="iccid", default=None)
-
-    @model_validator(mode="before")
-    @classmethod
-    def extract_event_from_operation(cls, data: dict) -> Any:
-        operation = data.get("profileManagementOperation")
-        if isinstance(operation, tuple) and len(operation) == 2:
-            data["profileManagementOperation"] = NotificationType(operation[1])
-
-        return data
 
 
 class BppCommandId(int, Enum):
@@ -57,39 +52,33 @@ class ErrorReason(int, Enum):
     INSTALL_FAILED_DUE_TO_UNKNOWN_ERROR = 127
 
 
-class SuccessResult(BaseModel):
+class SuccessResult(EuiccModel):
     aid: HexStr = Field(alias="aid")
     sima_response: HexStr = Field(alias="simaResponse")
 
 
-class ErrorResult(BaseModel):
+class ErrorResult(EuiccModel):
     bpp_command_id: BppCommandId = Field(alias="bppCommandId")
     error_reason: ErrorReason = Field(alias="errorReason")
-    sima_response: HexStr | None = Field(alias="simaResponse", default=None)
+    sima_response: HexStr = Field(alias="simaResponse", default="")
 
 
-class ProfileInstallationResultData(BaseModel):
+class ProfileInstallationResultData(EuiccModel):
     transaction_id: HexStr = Field(alias="transactionId")
     notification: Notification = Field(alias="notificationMetadata")
     smdp_oid: str = Field(alias="smdpOid")
-    final_result: Union[SuccessResult, ErrorResult] = Field(alias="finalResult")
-
-    @model_validator(mode="before")
-    @classmethod
-    def extract_final_result_tuple(cls, data: dict) -> Any:
-        final_result = data.get("finalResult")
-        if isinstance(final_result, tuple) and len(final_result) == 2:
-            data["finalResult"] = final_result[1]
-
-        return data
+    final_result: Union[
+        tuple[Literal["successResult"], SuccessResult]
+        | tuple[Literal["errorResult"], ErrorResult]
+    ] = Field(alias="finalResult")
 
 
-class ProfileInstallationResult(BaseModel):
+class ProfileInstallationResult(EuiccModel):
     data: ProfileInstallationResultData = Field(alias="profileInstallationResultData")
     euicc_sign_pir: HexStr = Field(alias="euiccSignPIR")
 
 
-class OtherSignedNotification(BaseModel):
+class OtherSignedNotification(EuiccModel):
     tbs_other_notification: Notification = Field(alias="tbsOtherNotification")
     euicc_notification_signature: HexStr = Field(alias="euiccNotificationSignature")
     euicc_certificate: HexStr = Field(alias="euiccCertificate")

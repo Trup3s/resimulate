@@ -2,7 +2,6 @@ import base64
 import logging
 
 import httpx
-from osmocom.utils import b2h, h2b
 
 from resimulate.asn import asn
 from resimulate.euicc.models.notification import (
@@ -34,7 +33,7 @@ class SmdpClient(httpx.Client):
     def initiate_authentication(
         self, euicc_challenge: str, euicc_info_1: str
     ) -> InitiateAuthenticationResponse:
-        b64_euicc_challenge = base64.b64encode(h2b(euicc_challenge)).decode()
+        b64_euicc_challenge = base64.b64encode(bytes.fromhex(euicc_challenge)).decode()
         b64_euicc_info_1 = base64.b64encode(
             asn.encode("EUICCInfo1", euicc_info_1)
         ).decode()
@@ -65,7 +64,7 @@ class SmdpClient(httpx.Client):
         self, transaction_id: str, authenticate_server_response: str
     ) -> AuthenticateClientResponse:
         b64_authenticate_server = base64.b64encode(
-            h2b(authenticate_server_response)
+            bytes.fromhex(authenticate_server_response)
         ).decode()
 
         response = self.post(
@@ -89,7 +88,7 @@ class SmdpClient(httpx.Client):
             check_constraints=True,
         )
         logging.info(
-            f"Loading profile {profile_metadata.get('profileName')} ({b2h(profile_metadata.get('iccid'))})"
+            f"Loading profile {profile_metadata.get('profileName')} ({profile_metadata.get('iccid').hex()})"
         )
 
         return authentication_response
@@ -100,7 +99,7 @@ class SmdpClient(httpx.Client):
         prepare_download_response: str,
     ) -> GetBoundProfilePackageResponse:
         b64_prepare_download_response = base64.b64encode(
-            h2b(prepare_download_response)
+            bytes.fromhex(prepare_download_response)
         ).decode()
 
         response = self.post(
@@ -124,17 +123,20 @@ class SmdpClient(httpx.Client):
         self, pending_notification: ProfileInstallationResult | OtherSignedNotification
     ) -> None:
         data = pending_notification.model_dump()
+        seq_number = None
         if isinstance(pending_notification, ProfileInstallationResult):
-            notification = {"profileInstallationResult": data}
+            notification = ("profileInstallationResult", data)
+            seq_number = pending_notification.data.notification.seq_number
         else:
-            notification = {"otherSignedNotification": data}
+            notification = ("otherSignedNotification", data)
+            seq_number = pending_notification.tbs_other_notification.seq_number
 
         encoded_notification = asn.encode(
             "PendingNotification",
             notification,
             check_constraints=True,
         )
-        b64_pending_notification = base64.b64encode(h2b(encoded_notification)).decode()
+        b64_pending_notification = base64.b64encode(encoded_notification).decode()
 
         response = self.post(
             url="/gsma/rsp2/es9plus/handleNotification",
@@ -142,9 +144,9 @@ class SmdpClient(httpx.Client):
                 "pendingNotification": b64_pending_notification,
             },
         )
-        if response.status_code != 200:
+        if response.status_code != 204:
             raise SmdpException(
                 f"Failed to handle notification: {response.status_code} - {response.text}"
             )
 
-        logging.debug(f"Handled notification: {response.json()}")
+        logging.debug(f"Handled notification with sequence number {seq_number}")

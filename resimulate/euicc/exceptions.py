@@ -207,12 +207,17 @@ class NotificationException(EuiccException):
     def raise_from_result(result: int):
         """Raises the appropriate exception subclass based on the result."""
         error_map = {
+            1: NothingToDeleteError,
             127: UndefinedNotificationError,
         }
 
         exception_class = error_map.get(result, NotificationException)
 
         raise exception_class()
+
+
+class NothingToDeleteError(NotificationException):
+    message = "Nothing to delete, sequence number not found"
 
 
 class UndefinedNotificationError(NotificationException):

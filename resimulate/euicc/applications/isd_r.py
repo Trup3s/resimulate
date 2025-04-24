@@ -1,8 +1,6 @@
 import logging
 from hashlib import sha256
 
-from osmocom.utils import b2h, h2b
-
 from resimulate.asn import asn
 from resimulate.euicc.applications import Application
 from resimulate.euicc.exceptions import (
@@ -38,7 +36,7 @@ class ISDR(Application):
             "GetEuiccChallengeRequest",
             "GetEuiccChallengeResponse",
         )
-        return b2h(euicc_challenge.get("euiccChallenge"))
+        return euicc_challenge.get("euiccChallenge").hex()
 
     def get_euicc_info_1(self) -> dict:
         command = self.store_data("GetEuiccInfo1Request", "EUICCInfo1")
@@ -56,11 +54,11 @@ class ISDR(Application):
         return command
 
     def get_eid(self) -> str:
-        command = {"tagList": h2b("5A")}
+        command = {"tagList": bytes.fromhex("5A")}
         eid_data = self.store_data(
             "GetEuiccDataRequest", "GetEuiccDataResponse", command
         )
-        return b2h(eid_data.get("eidValue"))
+        return eid_data.get("eidValue").hex()
 
     def authenticate_server(
         self,
@@ -68,7 +66,7 @@ class ISDR(Application):
         matching_id: str,
         imei: str | None = None,
     ) -> dict:
-        device_info = {"tac": h2b("35290611"), "deviceCapabilities": dict()}
+        device_info = {"tac": bytes.fromhex("35290611"), "deviceCapabilities": dict()}
         if imei:
             device_info["imei"] = imei
 
@@ -94,7 +92,7 @@ class ISDR(Application):
         )
         response = asn.decode(
             "AuthenticateServerResponse",
-            h2b(data),
+            bytes.fromhex(data),
             check_constraints=True,
         )
 
@@ -135,7 +133,7 @@ class ISDR(Application):
         )
         response = asn.decode(
             "PrepareDownloadResponse",
-            h2b(data),
+            bytes.fromhex(data),
             check_constraints=True,
         )
 
@@ -157,11 +155,11 @@ class ISDR(Application):
         logging.debug(f"BoundProfilePackage: {bound_profile_package}")
 
         def send_and_check(
-            data, label: str | None = None, request_type: str | None = None
+            data: bytes, label: str | None = None, request_type: str | None = None
         ) -> dict | None:
             if label:
                 logging.debug(
-                    f"Sending {label}: {b2h(data) if isinstance(data, bytes) else data}"
+                    f"Sending {label}: {data.hex() if isinstance(data, bytes) else data}"
                 )
 
             result = self.store_data(
@@ -228,10 +226,10 @@ class ISDR(Application):
     ) -> bool:
         profile_identifier = {}
         if iccid:
-            profile_identifier = ("iccid", h2b(iccid))
+            profile_identifier = ("iccid", bytes.fromhex(iccid))
 
         if isdp_aid:
-            profile_identifier = ("isdpAid", h2b(isdp_aid))
+            profile_identifier = ("isdpAid", bytes.fromhex(isdp_aid))
 
         response = self.store_data(
             "EnableProfileRequest",
@@ -250,10 +248,10 @@ class ISDR(Application):
     ) -> bool:
         profile_identifier = None
         if iccid:
-            profile_identifier = ("iccid", h2b(iccid))
+            profile_identifier = ("iccid", bytes.fromhex(iccid))
 
         if isdp_aid:
-            profile_identifier = ("isdpAid", h2b(isdp_aid))
+            profile_identifier = ("isdpAid", bytes.fromhex(isdp_aid))
 
         response = self.store_data(
             "DisableProfileRequest",
@@ -272,10 +270,10 @@ class ISDR(Application):
     ) -> bool:
         profile_identifier = {}
         if iccid:
-            profile_identifier = ("iccid", h2b(iccid))
+            profile_identifier = ("iccid", bytes.fromhex(iccid))
 
         if isdp_aid:
-            profile_identifier = ("isdpAid", h2b(isdp_aid))
+            profile_identifier = ("isdpAid", bytes.fromhex(isdp_aid))
 
         response = self.store_data(
             "DeleteProfileRequest",
@@ -390,6 +388,48 @@ class ISDR(Application):
                 )
 
         return notifications
+
+    def remove_notification(self, seq_number: int) -> bool:
+        response = self.store_data(
+            "NotificationSentRequest",
+            "NotificationSentResponse",
+            {"seqNumber": seq_number},
+        )
+
+        result_code = response.get("deleteNotificationStatus")
+        if result_code == 0:
+            return True
+
+        NotificationException.raise_from_result(result_code)
+
+    def process_notifications(
+        self,
+        notifications: list[ProfileInstallationResult | OtherSignedNotification],
+        remove: bool = True,
+    ) -> list[int]:
+        processed_notification_seq_numbers = []
+        for notification in notifications:
+            meta = None
+            if isinstance(notification, ProfileInstallationResult):
+                meta = notification.data.notification
+            elif isinstance(notification, OtherSignedNotification):
+                meta = notification.tbs_other_notification
+
+            smdp_client = SmdpClient(smdp_address=meta.address, verify_ssl=False)
+            logging.debug(f"Processing notification from {meta.address}")
+
+            try:
+                smdp_client.handle_notification(notification)
+
+                if remove:
+                    self.remove_notification(meta.seq_number)
+            except NotificationException as e:
+                logging.error(f"Failed to process notification: {e}")
+                continue
+
+            processed_notification_seq_numbers.append(meta.seq_number)
+
+        return processed_notification_seq_numbers
 
     def download_profile(self, profile: ActivationProfile) -> dict:
         smdp_address = profile.smdpp_address
