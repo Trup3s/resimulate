@@ -166,7 +166,7 @@ class ISDR(Application):
                 )
 
             result = self.store_data(
-                caller_func_name="label",
+                caller_func_name=label,
                 request_type=request_type,
                 response_type="ProfileInstallationResult",
                 request_data=data,
@@ -178,6 +178,7 @@ class ISDR(Application):
                 )
                 if result_type == "errorResult":
                     ProfileInstallationException.raise_from_result(data)
+
             return result
 
         # TODO: Move functions to isd-p
