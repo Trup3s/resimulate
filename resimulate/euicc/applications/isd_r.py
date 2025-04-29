@@ -32,7 +32,10 @@ class ISDR(Application):
     name = "ISDR"
     alternative_aids = [
         "A0000005591010FFFFFFFF8900050500",  # 5Ber.esim
+        "A0000005591010FFFFFFFF8900000177",  # Xesim
+        "A0000005591010000000008900000300",  # eSIM.me
     ]
+    cla_byte = 0x80
 
     def get_euicc_challenge(self) -> str:
         euicc_challenge = self.store_data(
@@ -182,6 +185,7 @@ class ISDR(Application):
             return result
 
         # TODO: Move functions to isd-p
+        self.cla_byte = 0x80
 
         # Step 1: initialise secure channel
         send_and_check(
@@ -220,7 +224,7 @@ class ISDR(Application):
         final_result = None
         for index, sequence in enumerate(sequence_of_86):
             final_result = send_and_check(sequence, f"sequenceOf86_{index + 1}")
-
+        self.cla_byte = 0x00
         return ProfileInstallationResult(**final_result)
 
     def enable_profile(

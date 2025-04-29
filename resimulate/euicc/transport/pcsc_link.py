@@ -3,6 +3,7 @@ import logging
 from osmocom.utils import Hexstr, h2i, i2h
 from pySim.transport import LinkBaseTpdu
 from pySim.utils import ResTuple, sw_match
+from pySim.exceptions import SwMatchError
 from smartcard import System
 from smartcard.CardConnection import CardConnection
 from smartcard.CardRequest import CardRequest
@@ -144,9 +145,10 @@ class PcscLink(LinkBaseTpdu):
                 logging.debug("Splitting APDU into %d short APDUs", len(short_apdus))
 
             for short_apdu in short_apdus:
-                data, sw = self.send_apdu(short_apdu.to_hex())
-                if not sw_match(sw, "9000"):
-                    break
+                try:
+                    data, sw = self.send_apdu_checksw(short_apdu.to_hex())
+                except SwMatchError as exception:
+                    return None, exception.sw_actual
 
             return data, sw
 

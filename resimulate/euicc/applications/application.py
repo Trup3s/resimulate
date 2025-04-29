@@ -53,7 +53,9 @@ class Application:
             caller_frame = inspect.stack()[1]
             caller_func_name = caller_frame.function
 
-        apdu = APDUPacket(cla=0x80, ins=0xE2, p1=0x91, p2=0x00, data=command_encoded)
+        apdu = APDUPacket(
+            cla=self.cla_byte, ins=0xE2, p1=0x91, p2=0x00, data=command_encoded
+        )
         data, sw = self.link.send_apdu_with_mutation(self.name, caller_func_name, apdu)
 
         if not any([sw_match(sw, pattern) for pattern in ["9000", "61??"]]):
