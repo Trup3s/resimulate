@@ -1,6 +1,8 @@
 import logging
 from hashlib import sha256
 
+from osmocom.utils import i2h
+
 from resimulate.asn import asn
 from resimulate.euicc.applications import Application
 from resimulate.euicc.exceptions import (
@@ -184,8 +186,17 @@ class ISDR(Application):
 
             return result
 
+        def register_list(data: list[bytes], tag: int):
+            size = sum(len(seq) for seq in data)
+            hex_data = [tag]
+            data_len = len(i2h([size]))
+            if data_len > 2:
+                hex_data.append(0x80 + (data_len - 2))
+
+            hex_data.append(size)
+            self.store_data(request_data=bytes.fromhex(i2h(hex_data)))
+
         # TODO: Move functions to isd-p
-        self.cla_byte = 0x80
 
         # Step 1: initialise secure channel
         send_and_check(
@@ -199,21 +210,21 @@ class ISDR(Application):
         )
 
         # Step 2: Configure ISDP
-        first_sequence_of_87 = bound_profile_package.get("firstSequenceOf87")
-        for index, sequence in enumerate(first_sequence_of_87):
-            send_and_check(
-                sequence,
-                f"firstSequenceOf87_{index + 1}",
-            )
+        send_and_check(
+            bound_profile_package.get("firstSequenceOf87"),
+            "firstSequenceOf87",
+        )
 
         # Step 3: Store Metadata
         sequence_of_88 = bound_profile_package.get("sequenceOf88")
+        register_list(sequence_of_88, 0xA1)
         for index, sequence in enumerate(sequence_of_88):
             send_and_check(sequence, f"sequenceOf88_{index + 1}")
 
         # Step 4: Replace Session Keys (optional)
         if second_sequence := bound_profile_package.get("secondSequenceOf87"):
-            for sequence in second_sequence:
+            register_list(second_sequence, 0xA2)
+            for index, sequence in enumerate(second_sequence):
                 send_and_check(
                     sequence,
                     f"secondSequenceOf87_{index + 1}",
@@ -221,15 +232,31 @@ class ISDR(Application):
 
         # Step 5: load profile elements
         sequence_of_86 = bound_profile_package.get("sequenceOf86")
+        register_list(sequence_of_86, 0xA3)
         final_result = None
         for index, sequence in enumerate(sequence_of_86):
             final_result = send_and_check(sequence, f"sequenceOf86_{index + 1}")
-        self.cla_byte = 0x00
+
         return ProfileInstallationResult(**final_result)
 
     def enable_profile(
-        self, iccid: str | None = None, isdp_aid: str | None = None
+        self,
+        iccid: str | None = None,
+        isdp_aid: str | None = None,
+        refresh: bool = False,
     ) -> bool:
+        """Enable a profile on the eUICC.Enables the target profile and implicitly disables the Profile currently enabled.
+
+        Args:
+            iccid (str | None, optional): ICCID of the target profile. Defaults to None.
+            isdp_aid (str | None, optional): ISD-P aid of the target profile. Defaults to None.
+            refresh (bool, optional): Sets the refresh flag. For more information: SGP.22 v3.1 [5.6.1]. Defaults to False.
+
+        Returns:
+            bool: True, if the profile was enabled successfully.
+        Raises:
+            ProfileInteractionException: If the profile could not be enabled and some error occurred.
+        """
         profile_identifier = {}
         if iccid:
             profile_identifier = ("iccid", bytes.fromhex(iccid))
@@ -240,7 +267,10 @@ class ISDR(Application):
         response = self.store_data(
             "EnableProfileRequest",
             "EnableProfileResponse",
-            {"profileIdentifier": profile_identifier, "refreshFlag": True},
+            {
+                "profileIdentifier": profile_identifier,
+                "refreshFlag": refresh,
+            },
         )
         logging.debug(f"EnableProfileResponse: {response}")
 
@@ -250,7 +280,10 @@ class ISDR(Application):
         return True
 
     def disable_profile(
-        self, iccid: str | None = None, isdp_aid: str | None = None
+        self,
+        iccid: str | None = None,
+        isdp_aid: str | None = None,
+        refresh: bool = False,
     ) -> bool:
         profile_identifier = None
         if iccid:
@@ -262,7 +295,7 @@ class ISDR(Application):
         response = self.store_data(
             "DisableProfileRequest",
             "DisableProfileResponse",
-            {"profileIdentifier": profile_identifier, "refreshFlag": True},
+            {"profileIdentifier": profile_identifier, "refreshFlag": refresh},
         )
         logging.debug(f"DisableProfileResponse: {response}")
 
@@ -435,7 +468,7 @@ class ISDR(Application):
 
     def set_nickname(self, iccid: str, nickname: str) -> bool:
         response = self.store_data(
-            "InformationSetNicknameRequest",
+            "SetNicknameRequest",
             "SetNicknameResponse",
             {"iccid": bytes.fromhex(iccid), "profileNickname": nickname},
         )

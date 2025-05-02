@@ -24,7 +24,7 @@ class Card:
     def __init__(self, link: PcscLink, name: str | None = None) -> None:
         self.link = link
         applications: list[Application] = [USIM, ISDR, ECASD, ISDP, ESTK_FWUPD]
-        cla_bytes = [0x00, 0x01, 0x80, 0x81]
+        cla_bytes = [0x80, 0x00]
         self.commands = SimCardCommands(self.link)
         self.executed_commands = []
         self.supported_applications: dict[type[Application], Application] = {}

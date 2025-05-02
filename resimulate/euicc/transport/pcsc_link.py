@@ -153,7 +153,6 @@ class PcscLink(LinkBaseTpdu):
             return data, sw
 
         if not self.mutation_engine:
-            logging.debug("No mutation engine provided, sending original APDU")
             return handle_apdu_tansmission(apdu)
 
         recordings = []

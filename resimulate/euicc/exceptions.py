@@ -93,7 +93,7 @@ class ResultBaseException(EuiccException):
     @classmethod
     def raise_from_result(cls, result: int):
         """Raises the appropriate exception subclass based on the result."""
-        exception_class = cls.error_map.get(result, cls)
+        exception_class = cls.error_map.get(result, UndefinedError)
         exception_class.__bases__ = (cls,)
 
         raise exception_class()
@@ -159,6 +159,38 @@ class PPRNotAllowed(EuiccException):
     message = "PPR not allowed"
 
 
+class EnterpriseProfilesNotSupported(EuiccException):
+    message = "Enterprise profiles not supported"
+
+
+class EnterpriseRulesNotAllowed(EuiccException):
+    message = "Enterprise rules not allowed"
+
+
+class EnterpriseProfileNotAllowed(EuiccException):
+    message = "Enterprise profile not allowed"
+
+
+class EnterpriseOidMismatch(EuiccException):
+    message = "Enterprise OID mismatch"
+
+
+class EnterpriseRulesError(EuiccException):
+    message = "Enterprise rules error"
+
+
+class EnterpriseProfilesOnly(EuiccException):
+    message = "Enterprise profiles only"
+
+
+class LprNotSupported(EuiccException):
+    message = "LPR not supported"
+
+
+class UnknownTlvInMetadata(EuiccException):
+    message = "Unknown TLV in metadata"
+
+
 class UndefinedError(EuiccException):
     message = "Unknown installation error"
 
@@ -179,8 +211,28 @@ class DisallowedByPolicy(EuiccException):
     message = "Operation disallowed by policy"
 
 
+class WrongProfileReenabling(EuiccException):
+    message = "Wrong profile reenabling"
+
+
 class CatBusy(EuiccException):
     message = "CAT is busy"
+
+
+class DisallowedByEnterpriseRule(EuiccException):
+    message = "Operation disallowed by enterprise rule"
+
+
+class CommandError(EuiccException):
+    message = "Command error"
+
+
+class DisallowedForRpm(EuiccException):
+    message = "Operation disallowed for RPM"
+
+
+class NoEsimPortAvailable(EuiccException):
+    message = "No eSIM port available"
 
 
 class ProfileInstallationException(ResultBaseException):
@@ -203,6 +255,14 @@ class ProfileInstallationException(ResultBaseException):
         13: DataMismatch,
         14: InvalidNAAKey,
         15: PPRNotAllowed,
+        17: EnterpriseProfilesNotSupported,
+        18: EnterpriseRulesNotAllowed,
+        19: EnterpriseProfileNotAllowed,
+        20: EnterpriseOidMismatch,
+        21: EnterpriseRulesError,
+        22: EnterpriseProfilesOnly,
+        23: LprNotSupported,
+        26: UnknownTlvInMetadata,
         127: UndefinedError,
     }
 
@@ -229,7 +289,8 @@ class ProfileInstallationException(ResultBaseException):
 
         error_reason = error_result.get("errorReason")
         bpp_command_id = error_result.get("bppCommandId")
-        exception_class = cls.error_map.get(error_reason, cls)
+        exception_class = cls.error_map.get(error_reason, UndefinedError)
+        exception_class.__bases__ = (cls,)
 
         raise exception_class(bpp_command_id=bpp_command_id)
 
@@ -252,7 +313,12 @@ class ProfileInteractionException(ResultBaseException):
         1: IccidOrAidNotFound,
         2: ProfileNotInEnabledState,
         3: DisallowedByPolicy,
-        4: CatBusy,
+        4: WrongProfileReenabling,
+        5: CatBusy,
+        6: DisallowedByEnterpriseRule,
+        7: CommandError,
+        8: DisallowedForRpm,
+        9: NoEsimPortAvailable,
         127: UndefinedError,
     }
 

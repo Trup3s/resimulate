@@ -12,10 +12,13 @@ class EuiccModel(BaseModel):
 
 class NotificationType(int, Enum):
     INSTALL = 0
-    ENABLE = 1
-    DISABLE = 2
-    DELETE = 3
-    UNKNOWN = 4
+    LOCAL_ENABLE = 1
+    LOCAL_DISABLE = 2
+    LOCAL_DELETE = 3
+    RPM_ENABLE = 4
+    RPM_DISABLE = 5
+    RPM_DELETE = 6
+    LOAD_RPM_PACKAGE_RESULT = 7
 
 
 class Notification(EuiccModel):
@@ -41,8 +44,8 @@ class ErrorReason(int, Enum):
     UNSUPPORTED_CRT_VALUES = 4
     UNSUPPORTED_REMOTE_OPERATION_TYPE = 5
     UNSUPPORTED_PROFILE_CLASS = 6
-    SCP03T_STRUCTURE_ERROR = 7
-    SCP03T_SECURITY_ERROR = 8
+    BSP_STRUCTURE_ERROR = 7
+    BSP_SECURITY_ERROR = 8
     INSTALL_FAILED_DUE_TO_ICCID_ALREADY_EXISTS_ON_EUICC = 9
     INSTALL_FAILED_DUE_TO_INSUFFICIENT_MEMORY_FOR_PROFILE = 10
     INSTALL_FAILED_DUE_TO_INTERRUPTION = 11
@@ -50,18 +53,26 @@ class ErrorReason(int, Enum):
     INSTALL_FAILED_DUE_TO_DATA_MISMATCH = 13
     TEST_PROFILE_INSTALL_FAILED_DUE_TO_INVALID_NAA_KEY = 14
     PPR_NOT_ALLOWED = 15
+    ENTERPRISE_PROFILES_NOT_SUPPORTED = 17
+    ENTERPRISE_RULES_NOT_ALLOWED = 18
+    ENTERPRISE_PROFILE_NOT_ALLOWED = 19
+    ENTERPRISE_OID_MISMATCH = 20
+    ENTERPRISE_RULES_ERROR = 21
+    ENTERPRISE_PROFILES_ONLY = 22
+    LPR_NOT_SUPPORTED = 23
+    UNKNOWN_TLV_IN_METADATA = 26
     INSTALL_FAILED_DUE_TO_UNKNOWN_ERROR = 127
 
 
 class SuccessResult(EuiccModel):
     aid: HexStr = Field(alias="aid")
-    sima_response: HexStr = Field(alias="simaResponse")
+    ppi_response: HexStr = Field(alias="ppiResponse")
 
 
 class ErrorResult(EuiccModel):
     bpp_command_id: BppCommandId = Field(alias="bppCommandId")
     error_reason: ErrorReason = Field(alias="errorReason")
-    sima_response: HexStr = Field(alias="simaResponse", default="")
+    ppi_response: HexStr = Field(alias="ppiResponse", default="")
 
 
 class ProfileInstallationResultData(EuiccModel):
@@ -83,4 +94,5 @@ class OtherSignedNotification(EuiccModel):
     tbs_other_notification: Notification = Field(alias="tbsOtherNotification")
     euicc_notification_signature: HexStr = Field(alias="euiccNotificationSignature")
     euicc_certificate: HexStr = Field(alias="euiccCertificate")
-    eum_certificate: HexStr = Field(alias="eumCertificate")
+    next_cert_in_chain: HexStr = Field(alias="nextCertInChain")
+    other_certs_in_chain: list[HexStr] = Field(alias="otherCertsInChain", default=[])
