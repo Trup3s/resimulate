@@ -1,13 +1,10 @@
 from enum import Enum
 from typing import Literal, Union
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import Field
 
 from resimulate.euicc.encoder import HexStr
-
-
-class EuiccModel(BaseModel):
-    model_config = ConfigDict(serialize_by_alias=True)
+from resimulate.euicc.models import EuiccModel
 
 
 class NotificationType(int, Enum):

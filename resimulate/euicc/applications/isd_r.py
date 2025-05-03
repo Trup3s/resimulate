@@ -12,14 +12,15 @@ from resimulate.euicc.exceptions import (
     ProfileInstallationException,
     ProfileInteractionException,
 )
-from resimulate.euicc.models import ActivationProfile
+from resimulate.euicc.models.activation_profile import ActivationProfile
+from resimulate.euicc.models.configured_data import EuiccConfiguredData
 from resimulate.euicc.models.notification import (
     Notification,
     NotificationType,
     OtherSignedNotification,
     ProfileInstallationResult,
 )
-from resimulate.euicc.models.profile_info import Profile, ProfileClass
+from resimulate.euicc.models.profile import Profile, ProfileClass
 from resimulate.euicc.models.reset_option import ResetOption
 from resimulate.smdp.client import SmdpClient
 from resimulate.smdp.models import (
@@ -54,12 +55,12 @@ class ISDR(Application):
         command = self.store_data("GetEuiccInfo2Request", "EUICCInfo2")
         return command
 
-    def get_configured_addresses(self) -> dict:
+    def get_configured_data(self) -> EuiccConfiguredData:
         command = self.store_data(
-            "EuiccConfiguredAddressesRequest",
-            "EuiccConfiguredAddressesResponse",
+            "EuiccConfiguredDataRequest",
+            "EuiccConfiguredDataResponse",
         )
-        return command
+        return EuiccConfiguredData(**command)
 
     def get_eid(self) -> str:
         command = {"tagList": bytes.fromhex("5A")}
@@ -494,11 +495,33 @@ class ISDR(Application):
 
         return True
 
-    def reset_euicc_memory(self, reset_option: ResetOption):
+    def reset_euicc_memory(
+        self, reset_options: list[ResetOption] | ResetOption
+    ) -> bool:
+        """Deletes selected subsets of the Profiles stored in the eUICC regardless of
+        their enabled status or any Profile Policy Rules.
+
+        Args:
+            reset_options (list[ResetOption] | ResetOption): Subset of the Profiles to be deleted.
+
+        Returns:
+            _type_: True, if the memory was reset successfully.
+        Raises:
+            EuiccMemoryResetException: If the memory could not be reset and some error occurred.
+        """
+        if not isinstance(reset_options, list):
+            reset_options = [reset_options]
+
+        reset_value = 0
+        for option in reset_options:
+            reset_value |= 1 << option.value
+
+        logging.debug(f"Reset options: {bin(reset_value)}")
+
         response = self.store_data(
             "EuiccMemoryResetRequest",
             "EuiccMemoryResetResponse",
-            {"resetOptions": (b"\x80", reset_option.value)},
+            {"resetOptions": (bytes.fromhex("E0"), reset_value)},
         )
         logging.debug(f"ResetEuiccMemoryResponse: {response}")
 
@@ -510,7 +533,7 @@ class ISDR(Application):
     def download_profile(self, profile: ActivationProfile) -> ProfileInstallationResult:
         smdp_address = profile.smdpp_address
         if not smdp_address:
-            smdp_address = self.get_configured_addresses().get("defaultDpAddress")
+            smdp_address = self.get_configured_data().default_dp_address
 
         smdp_client = SmdpClient(smdp_address=smdp_address, verify_ssl=False)
 

@@ -1,3 +1,5 @@
-from resimulate.euicc.models.activation_profile import ActivationProfile
+from pydantic import BaseModel, ConfigDict
 
-__all__ = ["ActivationProfile"]
+
+class EuiccModel(BaseModel):
+    model_config = ConfigDict(serialize_by_alias=True)

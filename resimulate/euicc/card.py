@@ -1,8 +1,6 @@
-import itertools
 import logging
 from typing import Type
 
-from osmocom.utils import h2b, i2h
 from pySim.commands import SimCardCommands
 
 from resimulate.euicc.applications import (
@@ -24,7 +22,6 @@ class Card:
     def __init__(self, link: PcscLink, name: str | None = None) -> None:
         self.link = link
         applications: list[Application] = [USIM, ISDR, ECASD, ISDP, ESTK_FWUPD]
-        cla_bytes = [0x80, 0x00]
         self.commands = SimCardCommands(self.link)
         self.executed_commands = []
         self.supported_applications: dict[type[Application], Application] = {}
@@ -33,18 +30,13 @@ class Card:
 
         for application in applications:
             aids = [application.aid] + application.alternative_aids
-            for aid, cla_byte in itertools.product(aids, cla_bytes):
+            for aid in aids:
                 try:
-                    self.select_adf(aid, cla_byte)
+                    self.select_adf(aid)
                     self.supported_applications[application] = application(
-                        link=self.link, aid=aid, cla_byte=cla_byte
+                        link=self.link, aid=aid
                     )
-                    logging.debug(
-                        "Found %s via ADF %s with CLA byte %s",
-                        application.name,
-                        aid,
-                        i2h([cla_byte]),
-                    )
+                    logging.debug("Found %s via ADF %s", application.name, aid)
                     break
                 except Exception as exception:
                     logging.debug(
@@ -54,8 +46,8 @@ class Card:
 
         self.link.reset_card()
 
-    def select_adf(self, adf: str, cla_byte: int) -> None:
-        apdu = APDUPacket(cla=cla_byte, ins=0xA4, p1=0x04, p2=0x04, data=h2b(adf))
+    def select_adf(self, adf: str) -> None:
+        apdu = APDUPacket(cla=0x00, ins=0xA4, p1=0x04, p2=0x04, data=bytes.fromhex(adf))
         self.link.send_apdu_checksw(apdu.to_hex(), "9000")
         logging.debug("Selected ADF %s", adf)
 
@@ -66,7 +58,7 @@ class Card:
 
         if self.selected_application != application:
             logging.debug("Selecting application %s", application.name)
-            self.select_adf(application.aid, application.cla_byte)
+            self.select_adf(application.aid)
             self.selected_application = application
 
         return application

@@ -25,8 +25,8 @@ class Application:
         self.aid = aid or self.aid
         self.cla_byte = cla_byte
 
-    def _merge_dicts(self, dicts: list[dict]) -> dict:
-        return {k: v for d in dicts for k, v in d.items()}
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.aid})"
 
     def store_data(
         self,
