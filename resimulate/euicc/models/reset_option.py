@@ -7,3 +7,7 @@ class ResetOption(int, Enum):
     RESET_DEFAULT_SMDP_ADDRESS = 2
     DELETE_PRE_LOADED_TEST_PROFILES = 3  # RSP > v3.0.0
     DELETE_PROVISIONING_PROFILES = 4  # RSP > v3.0.0
+
+    @staticmethod
+    def all():
+        return list(ResetOption)

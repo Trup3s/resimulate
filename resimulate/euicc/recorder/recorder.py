@@ -21,6 +21,7 @@ class OperationRecorder:
         self.recordings.clear()
 
     def save_file(self, file_path: str):
+        logging.debug(f"Saving recording to {file_path}")
         with open(file_path, "wb") as f:
             pickle.dump(self, f)
 

@@ -1,8 +1,6 @@
 import logging
 from hashlib import sha256
 
-from osmocom.utils import i2h
-
 from resimulate.asn import asn
 from resimulate.euicc.applications import Application
 from resimulate.euicc.exceptions import (
@@ -28,6 +26,7 @@ from resimulate.smdp.models import (
     GetBoundProfilePackageResponse,
     InitiateAuthenticationResponse,
 )
+from resimulate.util import i2h
 
 
 class ISDR(Application):
@@ -327,7 +326,7 @@ class ISDR(Application):
 
         return True
 
-    def list_profiles(
+    def get_profiles(
         self,
         isdp_aid: str | None = None,
         iccid: str | None = None,
@@ -368,7 +367,7 @@ class ISDR(Application):
 
         return [Profile(**profile) for profile in data]
 
-    def list_notifications(
+    def get_notifications(
         self, notification_type: NotificationType | None = None
     ) -> list[Notification]:
         filter = None
@@ -521,7 +520,12 @@ class ISDR(Application):
         response = self.store_data(
             "EuiccMemoryResetRequest",
             "EuiccMemoryResetResponse",
-            {"resetOptions": (bytes.fromhex("E0"), reset_value)},
+            {
+                "resetOptions": (
+                    bin(reset_value)[2:].encode(),
+                    max(option.value + 1 for option in reset_options),
+                )
+            },
         )
         logging.debug(f"ResetEuiccMemoryResponse: {response}")
 

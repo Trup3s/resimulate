@@ -31,3 +31,23 @@ def get_pcsc_devices() -> list[str]:
         devices.append(f"{i}: {name}")
 
     return devices
+
+
+def h2i(hex_str: str) -> int:
+    """Convert a hex string to an integer."""
+    return int(hex_str, 16)
+
+
+def i2h(int_values: list[int]) -> str:
+    """Convert a list of integers to a hex string."""
+    return "".join(f"{value:02X}" for value in int_values)
+
+
+def h2b(hex_str: str) -> bytes:
+    """Convert a hex string to bytes."""
+    return bytes.fromhex(hex_str)
+
+
+def b2h(byte_data: bytes) -> str:
+    """Convert bytes to a hex string."""
+    return byte_data.hex().upper()
