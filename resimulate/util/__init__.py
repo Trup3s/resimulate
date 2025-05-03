@@ -51,3 +51,7 @@ def h2b(hex_str: str) -> bytes:
 def b2h(byte_data: bytes) -> str:
     """Convert bytes to a hex string."""
     return byte_data.hex().upper()
+
+
+def str2ascii(data):
+    return "".join([chr(int(data[i : i + 2], 16)) for i in range(0, len(data), 2)])

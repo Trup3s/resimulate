@@ -10,7 +10,7 @@ class APDUPacket:
     p1: int
     p2: int
     data: bytes = b""
-    le: int = 0
+    le: int = 0x00
 
     def __str__(self):
         return (
@@ -101,14 +101,12 @@ class APDUPacket:
         idx = 4
         apdu_data = b""
         le = None
-        extended = False
 
         if idx == len(data):
             return cls(cla, ins, p1, p2)
 
         # Check for extended length indicator
         if data[idx] == 0x00:
-            extended = True
             idx += 1
 
             if len(data) - idx == 2:
@@ -140,4 +138,4 @@ class APDUPacket:
                 else:
                     raise ValueError("Invalid short APDU format")
 
-        return cls(cla, ins, p1, p2, data=apdu_data, le=le, extended=extended)
+        return cls(cla, ins, p1, p2, data=apdu_data, le=le)

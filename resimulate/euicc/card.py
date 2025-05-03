@@ -47,7 +47,8 @@ class Card:
         self.link.reset_card()
 
     def select_adf(self, adf: str) -> None:
-        apdu = APDUPacket(cla=0x00, ins=0xA4, p1=0x04, p2=0x04, data=bytes.fromhex(adf))
+        # ESTK_FWUPD needs cla=0x01
+        apdu = APDUPacket(cla=0x00, ins=0xA4, p1=0x04, p2=0x00, data=bytes.fromhex(adf))
         self.link.send_apdu_checksw(apdu.to_hex(), "9000")
         logging.debug("Selected ADF %s", adf)
 

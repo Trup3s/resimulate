@@ -1,9 +1,9 @@
 import logging
 
 from osmocom.utils import Hexstr, h2i, i2h
+from pySim.exceptions import SwMatchError
 from pySim.transport import LinkBaseTpdu
 from pySim.utils import ResTuple, sw_match
-from pySim.exceptions import SwMatchError
 from smartcard import System
 from smartcard.CardConnection import CardConnection
 from smartcard.CardRequest import CardRequest
@@ -121,15 +121,15 @@ class PcscLink(LinkBaseTpdu):
 
         self.connect()
 
-    def get_atr(self) -> Hexstr:
+    def get_atr(self) -> str:
         return i2h(self.card_connection.getATR())
 
     def send_tpdu(self, tpdu: Hexstr) -> ResTuple:
+        logging.debug("Sending TPDU: %s", tpdu.upper())
         data, sw1, sw2 = self.card_connection.transmit(h2i(tpdu))
         logging.debug(
-            "Sent TPDU: %s, received data: %s, SW: %s",
-            tpdu,
-            i2h(data),
+            "Received Data: %s, SW: %s",
+            i2h(data) or None,
             i2h([sw1, sw2]),
         )
         return i2h(data), i2h([sw1, sw2])
