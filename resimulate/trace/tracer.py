@@ -1,3 +1,4 @@
+import logging
 from queue import Queue
 
 from pySim.apdu import ApduDecoder, CardReset
@@ -20,7 +21,6 @@ from pySim.ts_102_221 import CardProfileUICC
 from resimulate.exceptions import RecorderException
 from resimulate.util.dummy_sim_link import DummySimLink
 from resimulate.util.enums import ISDR_AID
-from resimulate.util.logger import log
 
 APDU_COMMANDS = (
     UiccApduCommands + UsimApduCommands + ManageApduCommands + GlobalPlatformCommands
@@ -63,19 +63,19 @@ class Tracer:
                 apdu = self.source.read()
                 apdu_counter = apdu_counter + 1
             except StopIteration:
-                log.debug("%i APDUs parsed, stop iteration." % apdu_counter)
+                logging.debug("%i APDUs parsed, stop iteration." % apdu_counter)
                 package_queue.task_done()
                 return
             except Exception as e:
-                log.error("Error reading APDU (%s): %s", apdu, e)
+                logging.error("Error reading APDU (%s): %s", apdu, e)
                 continue
 
             if apdu is None:
-                log.debug("Received None APDU")
+                logging.debug("Received None APDU")
                 continue
 
             if isinstance(apdu, CardReset):
-                log.debug("Resetting runtime state")
+                logging.debug("Resetting runtime state")
                 self.runtime_state.reset()
                 continue
 
@@ -85,20 +85,20 @@ class Tracer:
             try:
                 apdu_command.process(self.runtime_state)
             except ValueError as e:
-                log.error("Error reading APDU (%s): %s", apdu, e)
-                log.exception(e)
+                logging.error("Error reading APDU (%s): %s", apdu, e)
+                logging.exception(e)
                 continue
             except AttributeError as e:
-                log.error("Error processing APDU (%s): %s", apdu, e)
-                log.exception(e)
+                logging.error("Error processing APDU (%s): %s", apdu, e)
+                logging.exception(e)
                 return
 
-            # Avoid cluttering the log with too much verbosity
+            # Avoid cluttering the logging with too much verbosity
             if self.suppress_select and isinstance(apdu_command, UiccSelect):
-                log.debug("Suppressing UiccSelect")
+                logging.debug("Suppressing UiccSelect")
                 continue
             if self.suppress_status and isinstance(apdu_command, UiccStatus):
-                log.debug("Suppressing UiccStatus")
+                logging.debug("Suppressing UiccStatus")
                 continue
 
             package_queue.put((apdu, apdu_command))

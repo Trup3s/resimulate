@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Literal, Union
 
+import rich.repr
 from pydantic import Field
 
 from resimulate.euicc.encoder import HexStr
@@ -18,6 +19,7 @@ class NotificationType(int, Enum):
     LOAD_RPM_PACKAGE_RESULT = 7
 
 
+@rich.repr.auto
 class Notification(EuiccModel):
     seq_number: int = Field(alias="seqNumber")
     event: tuple[bytes, NotificationType] = Field(alias="profileManagementOperation")
@@ -93,3 +95,27 @@ class OtherSignedNotification(EuiccModel):
     euicc_certificate: HexStr = Field(alias="euiccCertificate")
     next_cert_in_chain: HexStr = Field(alias="nextCertInChain")
     other_certs_in_chain: list[HexStr] = Field(alias="otherCertsInChain", default=[])
+
+
+class RpmCommandResult(EuiccModel):
+    iccid: HexStr = Field(alias="iccid")
+    rpm_command_result_data: tuple[str, dict | int] = Field(
+        alias="rpmCommandResultData"
+    )
+
+
+class LoadRpmPackageResultDataSigned(EuiccModel):
+    transaction_id: HexStr = Field(alias="transactionId")
+    notification: Notification = Field(alias="notificationMetadata")
+    smdp_oid: str = Field(alias="smdpOid")
+    final_result: Union[
+        tuple[Literal["rpmPackageExecutionResult"], list[dict]]
+        | tuple[Literal["errorResult"], ErrorResult]
+    ] = Field(alias="finalResult")
+
+
+class LoadRpmPackageResultSigned(EuiccModel):
+    load_rpm_package_result_data_signed: LoadRpmPackageResultDataSigned = Field(
+        alias="loadRpmPackageResultDataSigned"
+    )
+    euicc_sign_rpr: HexStr = Field(alias="euiccSignRPR")

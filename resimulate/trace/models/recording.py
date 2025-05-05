@@ -1,7 +1,7 @@
 import pickle
 from os.path import exists, isfile
 
-from resimulate.models.recorded_apdu import RecordedApdu
+from resimulate.trace.models.recorded_apdu import RecordedApdu
 from resimulate.util import get_version
 from resimulate.util.enums import ISDR_AID
 from resimulate.util.logger import log

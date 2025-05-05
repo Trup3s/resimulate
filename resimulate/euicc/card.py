@@ -1,3 +1,4 @@
+import itertools
 import logging
 from typing import Type
 
@@ -30,25 +31,23 @@ class Card:
 
         for application in applications:
             aids = [application.aid] + application.alternative_aids
-            for aid in aids:
+            for aid, cla_byte in itertools.product(aids, [0x01, 0x00]):
                 try:
-                    self.select_adf(aid)
-                    self.supported_applications[application] = application(
-                        link=self.link, aid=aid
-                    )
+                    self.select_adf(aid, cla_byte)
+                    instance = application(link=self.link, aid=aid)
+                    self.supported_applications[application] = instance
+                    self.selected_application = instance
                     logging.debug("Found %s via ADF %s", application.name, aid)
                     break
                 except Exception as exception:
                     logging.debug(
                         "Error selecting ADF %s! Failed with %s", aid, str(exception)
                     )
-                    pass
 
-        self.link.reset_card()
-
-    def select_adf(self, adf: str) -> None:
-        # ESTK_FWUPD needs cla=0x01
-        apdu = APDUPacket(cla=0x00, ins=0xA4, p1=0x04, p2=0x00, data=bytes.fromhex(adf))
+    def select_adf(self, adf: str, cla_byte: int = 0x00) -> None:
+        apdu = APDUPacket(
+            cla=cla_byte, ins=0xA4, p1=0x04, p2=0x0C, data=bytes.fromhex(adf)
+        )
         self.link.send_apdu_checksw(apdu.to_hex(), "9000")
         logging.debug("Selected ADF %s", adf)
 

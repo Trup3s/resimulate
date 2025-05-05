@@ -1,16 +1,23 @@
 import enum
 
 
-class ISDR_AID(str, enum.Enum):
-    DEFAULT = "a0000005591010ffffffff8900000100"
-    AID_5BER = "a0000005591010ffffffff8900050500"
+class ISDR_AID(enum.Enum):
+    DEFAULT = ("default", "a0000005591010ffffffff8900000100")
+    _5BER = ("5ber", "a0000005591010ffffffff8900050500")
+    XESIM = ("xesim", "A0000005591010FFFFFFFF8900000177")
+    ESIM_ME = ("esim_me", "A0000005591010000000008900000300")
 
-    @staticmethod
-    def get_aid(aid_description: str) -> "ISDR_AID":
-        mapping = {"default": ISDR_AID.DEFAULT, "5ber": ISDR_AID.AID_5BER}
-        isdr_aid = mapping.get(aid_description)
+    def __init__(self, description: str, aid: str):
+        self.description = description
+        self.aid = aid
 
-        if not isdr_aid:
-            raise ValueError(f"ISD-R AID {aid_description} is not supported!")
+    @classmethod
+    def from_description(cls, description: str) -> "ISDR_AID":
+        for member in cls:
+            if member.description == description:
+                return member
+        raise ValueError(f"ISD-R description '{description}' is not supported!")
 
-        return isdr_aid
+    @classmethod
+    def get_all_descriptions(cls) -> list[str]:
+        return [member.description for member in cls]

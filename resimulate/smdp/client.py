@@ -4,6 +4,7 @@ import logging
 import httpx
 
 from resimulate.asn import asn
+from resimulate.euicc.models.info import EuiccInfo1
 from resimulate.euicc.models.notification import (
     OtherSignedNotification,
     ProfileInstallationResult,
@@ -31,11 +32,11 @@ class SmdpClient(httpx.Client):
         )
 
     def initiate_authentication(
-        self, euicc_challenge: str, euicc_info_1: str
+        self, euicc_challenge: str, euicc_info_1: EuiccInfo1
     ) -> InitiateAuthenticationResponse:
         b64_euicc_challenge = base64.b64encode(bytes.fromhex(euicc_challenge)).decode()
         b64_euicc_info_1 = base64.b64encode(
-            asn.encode("EUICCInfo1", euicc_info_1)
+            asn.encode("EUICCInfo1", euicc_info_1.model_dump(exclude_none=True))
         ).decode()
 
         response = self.post(

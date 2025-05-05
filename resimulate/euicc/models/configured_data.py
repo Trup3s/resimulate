@@ -1,4 +1,6 @@
+import rich.repr
 from pydantic import Field
+
 from resimulate.euicc.encoder import HexStr
 from resimulate.euicc.models import EuiccModel
 
@@ -8,6 +10,7 @@ class Ci(EuiccModel):
     ci_name: str | None = Field(alias="ciName", default=None)
 
 
+@rich.repr.auto
 class EuiccConfiguredData(EuiccModel):
     default_dp_address: str | None = Field(alias="defaultDpAddress", default=None)
     root_ds_address: str | None = Field(alias="rootDsAddress", default=None)

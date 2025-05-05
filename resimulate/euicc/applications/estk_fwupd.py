@@ -35,6 +35,7 @@ class ESTK_FWUPD(Application):
 
     def get_version(self):
         self.setup()
+        # TODO: Fix transaction failure
         apdu = APDUPacket(cla=0xAA, ins=0xFF, p1=0x00, p2=0x00, le=0x08)
         data, sw = self.link.send_apdu_with_mutation(self.name, "get_version", apdu)
         if not sw_match(sw, "9000"):

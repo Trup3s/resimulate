@@ -1,9 +1,10 @@
 from enum import Enum
 
+import rich.repr
 from pydantic import ConfigDict, Field
 
 from resimulate.euicc.encoder import HexStr, Image
-from resimulate.euicc.models import EuiccModel
+from resimulate.euicc.models import EuiccModel, PprIds
 
 
 class ProfileState(int, Enum):
@@ -22,18 +23,13 @@ class ProfileClass(int, Enum):
     PRODUCTION = 2
 
 
-class PprIds(int, Enum):
-    ppr_update_control = 0
-    ppr1 = 1
-    ppr2 = 2
-
-
 class OperatorId(EuiccModel):
     mcc_mnc: HexStr = Field(alias="mccMnc")
     gid_1: HexStr | None = Field(alias="gid1", default=None)
     gid_2: HexStr | None = Field(alias="gid2", default=None)
 
 
+@rich.repr.auto
 class Profile(EuiccModel):
     iccid: HexStr | None = None
     isdp_aid: HexStr | None = Field(alias="isdpAid", default=None)

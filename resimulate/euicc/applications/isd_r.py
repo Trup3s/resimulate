@@ -12,7 +12,9 @@ from resimulate.euicc.exceptions import (
 )
 from resimulate.euicc.models.activation_profile import ActivationProfile
 from resimulate.euicc.models.configured_data import EuiccConfiguredData
+from resimulate.euicc.models.info import EuiccInfo1, EuiccInfo2
 from resimulate.euicc.models.notification import (
+    LoadRpmPackageResultSigned,
     Notification,
     NotificationType,
     OtherSignedNotification,
@@ -46,13 +48,13 @@ class ISDR(Application):
         )
         return euicc_challenge.get("euiccChallenge").hex()
 
-    def get_euicc_info_1(self) -> dict:
+    def get_euicc_info_1(self) -> EuiccInfo1:
         command = self.store_data("GetEuiccInfo1Request", "EUICCInfo1")
-        return command
+        return EuiccInfo1(**command)
 
-    def get_euicc_info_2(self) -> dict:
+    def get_euicc_info_2(self) -> EuiccInfo2:
         command = self.store_data("GetEuiccInfo2Request", "EUICCInfo2")
-        return command
+        return EuiccInfo2(**command)
 
     def get_configured_data(self) -> EuiccConfiguredData:
         command = self.store_data(
@@ -421,6 +423,8 @@ class ISDR(Application):
                 notifications.append(ProfileInstallationResult(**notification))
             elif key == "otherSignedNotification":
                 notifications.append(OtherSignedNotification(**notification))
+            elif key == "loadRpmPackageResultSigned":
+                notifications.append(LoadRpmPackageResultSigned(**notification))
 
         return notifications
 
@@ -439,7 +443,11 @@ class ISDR(Application):
 
     def process_notifications(
         self,
-        notifications: list[ProfileInstallationResult | OtherSignedNotification],
+        notifications: list[
+            ProfileInstallationResult
+            | OtherSignedNotification
+            | LoadRpmPackageResultSigned
+        ],
         remove: bool = True,
     ) -> list[int]:
         processed_notification_seq_numbers = []
@@ -449,6 +457,8 @@ class ISDR(Application):
                 meta = notification.data.notification
             elif isinstance(notification, OtherSignedNotification):
                 meta = notification.tbs_other_notification
+            elif isinstance(notification, LoadRpmPackageResultSigned):
+                meta = notification.load_rpm_package_result_data_signed.notification
 
             smdp_client = SmdpClient(smdp_address=meta.address, verify_ssl=False)
             logging.debug(f"Processing notification from {meta.address}")

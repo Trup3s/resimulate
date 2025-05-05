@@ -1,3 +1,4 @@
+import logging
 import signal
 from queue import Empty, Queue, ShutDown
 from threading import Thread
@@ -10,32 +11,29 @@ from rich.live import Live
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 from rich.text import Text
 
-from resimulate.models.recorded_apdu import RecordedApdu
-from resimulate.models.recording import Recording
-from resimulate.tracer import Tracer
+from resimulate.trace.models.recorded_apdu import RecordedApdu
+from resimulate.trace.models.recording import Recording
+from resimulate.trace.tracer import Tracer
 from resimulate.util.enums import ISDR_AID
-from resimulate.util.logger import log
 
 
 class Recorder:
-    def __init__(self, source: ApduSource, src_isd_r: str):
-        isd_r_aid = ISDR_AID.get_aid(src_isd_r)
-        self.tracer = Tracer(source, isd_r_aid=isd_r_aid)
+    def __init__(self, source: ApduSource, src_isd_r: ISDR_AID):
+        self.tracer = Tracer(source, isd_r_aid=src_isd_r.aid)
         self.src_isd_r_aid = src_isd_r
 
         self.package_queue: Queue[tuple[Apdu, ApduCommand]] = Queue()
         self.tracer_thread = Thread(
             target=self.tracer.main, args=(self.package_queue,), daemon=True
         )
-        self.recording = Recording(src_isd_r=isd_r_aid)
+        self.recording = Recording(src_isd_r=src_isd_r.aid)
         signal.signal(signal.SIGINT, self.__signal_handler)
 
     def __signal_handler(self, sig, frame):
-        log.debug("Received signal %s, shutting down capture.", sig)
+        logging.debug("Received signal %s, shutting down capture.", sig)
         self.package_queue.shutdown(immediate=True)
 
     def record(self, output_path: str, timeout: int):
-
         overall_progress = Progress(
             TimeElapsedColumn(),
             BarColumn(),
@@ -65,15 +63,14 @@ class Recorder:
             self.tracer_thread.start()
 
             while self.tracer_thread.is_alive():
-
                 try:
                     apdu, apdu_command = self.package_queue.get(timeout=timeout)
 
                     if apdu is None:
-                        log.debug("No more APDU packets to capture.")
+                        logging.debug("No more APDU packets to capture.")
                         break
 
-                    log.info(
+                    logging.info(
                         "Captured %s %s %s",
                         apdu_command._name,
                         apdu_command.path_str,
@@ -81,16 +78,16 @@ class Recorder:
                     )
                     self.recording.apdus.append(RecordedApdu(apdu, apdu_command))
                 except TimeoutError:
-                    log.debug("Timeout reached, stopping capture.")
+                    logging.debug("Timeout reached, stopping capture.")
                     break
                 except Empty:
-                    log.debug("No more APDU packets to capture.")
+                    logging.debug("No more APDU packets to capture.")
                     break
                 except ShutDown:
-                    log.debug("Shutting down capture.")
+                    logging.debug("Shutting down capture.")
                     break
                 except UnboundLocalError as e:
-                    log.debug("Error capturing APDU packets: %s", e)
+                    logging.debug("Error capturing APDU packets: %s", e)
                     break
 
                 overall_progress.update(
