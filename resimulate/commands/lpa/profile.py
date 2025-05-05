@@ -5,6 +5,7 @@ from rich_argparse import RichHelpFormatter
 
 from resimulate.euicc.card import Card
 from resimulate.euicc.models.profile import ProfileClass
+from resimulate.util.enum_action import EnumAction
 
 
 def add_subparser(
@@ -43,7 +44,7 @@ def add_subparser(
         "--profile-class",
         required=False,
         type=ProfileClass,
-        choices=list(ProfileClass),
+        action=EnumAction,
         help="Filter by profile class (e.g. '1' or '2')",
     )
 
@@ -105,18 +106,18 @@ def add_subparser(
         help="Delete a profile on the euicc.",
     )
     delete_parser.add_argument(
-        "-aid",
-        "--isdp-aid",
-        required=False,
-        type=str,
-        help="ISDP AID of the profile to delete (e.g. 'A0A4000002')",
-    )
-    delete_parser.add_argument(
         "-i",
         "--iccid",
         required=False,
         type=str,
         help="ICCID of the profile to delete (e.g. '89014103211118510720')",
+    )
+    delete_parser.add_argument(
+        "-aid",
+        "--isdp-aid",
+        required=False,
+        type=str,
+        help="ISDP AID of the profile to delete (e.g. 'A0A4000002')",
     )
 
     nickname_parser: argparse.ArgumentParser = profile_subparser.add_parser(

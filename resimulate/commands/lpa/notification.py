@@ -1,9 +1,11 @@
 import argparse
 
 from rich import print
+from rich_argparse import RichHelpFormatter
 
 from resimulate.euicc.card import Card
 from resimulate.euicc.models.notification import NotificationType
+from resimulate.util.enum_action import EnumAction
 
 
 def add_subparser(
@@ -11,7 +13,7 @@ def add_subparser(
 ) -> None:
     notification_parser: argparse.ArgumentParser = parent_parser.add_parser(
         "notification",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=RichHelpFormatter,
         help="Notification operations on the euicc.",
     )
     notification_subparser = notification_parser.add_subparsers(
@@ -20,7 +22,7 @@ def add_subparser(
 
     list_parser: argparse.ArgumentParser = notification_subparser.add_parser(
         "list",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=RichHelpFormatter,
         help="List all notifications on the euicc.",
     )
     list_parser.add_argument(
@@ -28,7 +30,7 @@ def add_subparser(
         "--type",
         required=False,
         type=NotificationType,
-        choices=list(NotificationType),
+        action=EnumAction,
         help="Filter by notification type (e.g. '1' or '2')",
     )
     list_parser.add_argument(
@@ -41,7 +43,7 @@ def add_subparser(
 
     process_parser: argparse.ArgumentParser = notification_subparser.add_parser(
         "process",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=RichHelpFormatter,
         help="Process a notification on the euicc.",
     )
     process_parser.add_argument(
@@ -68,7 +70,7 @@ def add_subparser(
 
     remove_parser: argparse.ArgumentParser = notification_subparser.add_parser(
         "remove",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=RichHelpFormatter,
         help="Remove a notification on the euicc.",
     )
     remove_parser.add_argument(

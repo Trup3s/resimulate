@@ -5,6 +5,7 @@ from rich_argparse import RichHelpFormatter
 
 from resimulate.euicc.card import Card
 from resimulate.euicc.models.reset_option import ResetOption
+from resimulate.util.enum_action import EnumAction
 
 
 def add_subparser(
@@ -64,7 +65,7 @@ def add_subparser(
         "--options",
         required=False,
         type=ResetOption,
-        choices=list(ResetOption),
+        action=EnumAction,
         help="Reset options (e.g. '1' or '2')",
     )
     reset_euicc_memory_parser.add_argument(

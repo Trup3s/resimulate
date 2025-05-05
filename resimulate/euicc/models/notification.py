@@ -4,7 +4,7 @@ from typing import Literal, Union
 import rich.repr
 from pydantic import Field
 
-from resimulate.euicc.encoder import HexStr
+from resimulate.euicc.encoder import BitString, HexStr
 from resimulate.euicc.models import EuiccModel
 
 
@@ -19,10 +19,21 @@ class NotificationType(int, Enum):
     LOAD_RPM_PACKAGE_RESULT = 7
 
 
+class Event(BitString):
+    INSTALL = 0
+    LOCAL_ENABLE = 1
+    LOCAL_DISABLE = 2
+    LOCAL_DELETE = 3
+    RPM_ENABLE = 4
+    RPM_DISABLE = 5
+    RPM_DELETE = 6
+    LOAD_RPM_PACKAGE_RESULT = 7
+
+
 @rich.repr.auto
 class Notification(EuiccModel):
     seq_number: int = Field(alias="seqNumber")
-    event: tuple[bytes, NotificationType] = Field(alias="profileManagementOperation")
+    event: Event = Field(alias="profileManagementOperation")
     address: str = Field(alias="notificationAddress")
     iccid: HexStr | None = Field(alias="iccid", default=None)
 
