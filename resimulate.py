@@ -6,11 +6,13 @@ import logging
 from argparse import Namespace
 
 import argcomplete
+from rich.console import Console
+from rich.logging import RichHandler
 from rich_argparse import RichHelpFormatter
 
 from resimulate.commands import lpa, trace
 from resimulate.util import get_pcsc_devices, get_version
-from resimulate.util.logger import log
+from resimulate.util.apdu_highlighter import ApduHighlighter
 
 devices: list[str] = get_pcsc_devices()
 parser = argparse.ArgumentParser(
@@ -45,7 +47,14 @@ def main():
     argcomplete.autocomplete(parser)
     args: Namespace = parser.parse_args()
 
-    log.setLevel(logging.DEBUG if args.verbose else logging.INFO)
+    log_level = logging.DEBUG if args.verbose else logging.WARNING
+    console = Console(highlighter=ApduHighlighter())
+    logging.basicConfig(
+        level=log_level,
+        format="%(message)s",
+        datefmt="[%X]",
+        handlers=[RichHandler(rich_tracebacks=True, console=console, markup=True)],
+    )
 
     if args.command == "trace":
         trace.run(args)

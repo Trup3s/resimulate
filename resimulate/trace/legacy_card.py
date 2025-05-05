@@ -1,3 +1,5 @@
+import logging
+
 from pySim.cards import SimCardBase, UiccCardBase
 from pySim.commands import SimCardCommands
 from pySim.euicc import CardApplicationISDR, EuiccInfo2
@@ -10,7 +12,6 @@ from pySim.ts_102_221 import CardProfileUICC
 from pySim.utils import all_subclasses
 
 from resimulate.util.enums import ISDR_AID
-from resimulate.util.logger import log
 
 
 # Card initialization taken from pySim card_init function and modified for ReSIMulate
@@ -29,19 +30,21 @@ class Card:
 
         self.card = UiccCardBase(self.sim_card_commands)
         if not self.card.probe():
-            log.warning("Could not detect card type! Assuming a generic card type...")
+            logging.warning(
+                "Could not detect card type! Assuming a generic card type..."
+            )
             self.card = SimCardBase(self.sim_card_commands)
             self.generic_card = True
 
         self.profile = CardProfile.pick(self.sim_card_commands)
         if self.profile is None:
-            log.warning("Unsupported card type!")
+            logging.warning("Unsupported card type!")
             return self.card
 
         if self.generic_card and isinstance(self.profile, CardProfileUICC):
             self.card._adm_chv_num = 0x0A
 
-        log.debug("Profile of type %s detected." % self.profile)
+        logging.debug("Profile of type %s detected." % self.profile)
 
         if isinstance(self.profile, CardProfileUICC):
             for app_cls in all_subclasses(CardApplication):
@@ -81,12 +84,12 @@ class Card:
                 )
                 self.euicc_info_2 = euicc_info_2.to_dict()["euicc_info2"]
             except SwMatchError:
-                log.warning("Card has ISD-R but not a SGP.22/SGP.32 eUICC.")
+                logging.warning("Card has ISD-R but not a SGP.22/SGP.32 eUICC.")
                 # has ISD-R but not a SGP.22/SGP.32 eUICC - maybe SGP.02?
                 pass
             finally:
                 self.runtime_state.reset()
         else:
-            log.warning("No ISD-R application found on card.")
+            logging.warning("No ISD-R application found on card.")
 
         return self.card

@@ -3,6 +3,7 @@ import argparse
 from rich_argparse import RichHelpFormatter
 
 from resimulate.trace.replay import Replayer
+from resimulate.util.enums import ISDR_AID
 
 
 def add_subparser(
@@ -18,10 +19,10 @@ def add_subparser(
     )
     parser.add_argument(
         "--target-isd-r",
-        type=str,
-        default="default",
-        choices=["default", "5ber"],
-        help="Target ISD-R",
+        type=ISDR_AID.from_description,
+        default=ISDR_AID.DEFAULT.description,
+        choices=ISDR_AID.get_all_descriptions(),
+        help="Target ISD-R. (default: %(default)s)",
     )
     parser.add_argument(
         "--mutate", action="store_true", default=False, help="Mutate APDUs"

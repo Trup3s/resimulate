@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import IntEnum
 from typing import Literal, Union
 
 import rich.repr
@@ -8,7 +8,7 @@ from resimulate.euicc.encoder import BitString, HexStr
 from resimulate.euicc.models import EuiccModel
 
 
-class NotificationType(int, Enum):
+class NotificationType(IntEnum):
     INSTALL = 0
     LOCAL_ENABLE = 1
     LOCAL_DISABLE = 2
@@ -19,26 +19,19 @@ class NotificationType(int, Enum):
     LOAD_RPM_PACKAGE_RESULT = 7
 
 
-class Event(BitString):
-    INSTALL = 0
-    LOCAL_ENABLE = 1
-    LOCAL_DISABLE = 2
-    LOCAL_DELETE = 3
-    RPM_ENABLE = 4
-    RPM_DISABLE = 5
-    RPM_DELETE = 6
-    LOAD_RPM_PACKAGE_RESULT = 7
+class NotificationEvent(BitString, enum=NotificationType):
+    pass
 
 
 @rich.repr.auto
 class Notification(EuiccModel):
     seq_number: int = Field(alias="seqNumber")
-    event: Event = Field(alias="profileManagementOperation")
+    event: NotificationEvent = Field(alias="profileManagementOperation")
     address: str = Field(alias="notificationAddress")
     iccid: HexStr | None = Field(alias="iccid", default=None)
 
 
-class BppCommandId(int, Enum):
+class BppCommandId(IntEnum):
     INITIALISE_SECURE_CHANNEL = 0
     CONFIGURE_ISDP = 1
     STORE_METADATA = 2
@@ -47,7 +40,7 @@ class BppCommandId(int, Enum):
     LOAD_PROFILE_ELEMENTS = 5
 
 
-class ErrorReason(int, Enum):
+class ErrorReason(IntEnum):
     INCORRECT_INPUT_VALUES = 1
     INVALID_SIGNATURE = 2
     INVALID_TRANSACTION_ID = 3
@@ -95,11 +88,13 @@ class ProfileInstallationResultData(EuiccModel):
     ] = Field(alias="finalResult")
 
 
+@rich.repr.auto
 class ProfileInstallationResult(EuiccModel):
     data: ProfileInstallationResultData = Field(alias="profileInstallationResultData")
     euicc_sign_pir: HexStr = Field(alias="euiccSignPIR")
 
 
+@rich.repr.auto
 class OtherSignedNotification(EuiccModel):
     tbs_other_notification: Notification = Field(alias="tbsOtherNotification")
     euicc_notification_signature: HexStr = Field(alias="euiccNotificationSignature")
@@ -125,6 +120,7 @@ class LoadRpmPackageResultDataSigned(EuiccModel):
     ] = Field(alias="finalResult")
 
 
+@rich.repr.auto
 class LoadRpmPackageResultSigned(EuiccModel):
     load_rpm_package_result_data_signed: LoadRpmPackageResultDataSigned = Field(
         alias="loadRpmPackageResultDataSigned"

@@ -31,7 +31,7 @@ def add_subparser(
         required=False,
         type=NotificationType,
         action=EnumAction,
-        help="Filter by notification type (e.g. '1' or '2')",
+        help="Filter by notification type",
     )
     list_parser.add_argument(
         "-n",

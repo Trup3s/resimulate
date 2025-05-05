@@ -62,11 +62,11 @@ def add_subparser(
     )
     reset_euicc_memory_parser.add_argument(
         "-o",
-        "--options",
+        "--option",
         required=False,
         type=ResetOption,
         action=EnumAction,
-        help="Reset options (e.g. '1' or '2')",
+        help="Reset option",
     )
     reset_euicc_memory_parser.add_argument(
         "-a",
@@ -92,6 +92,6 @@ def run(args: argparse.Namespace, card: Card) -> None:
         if args.all:
             card.isd_r.reset_euicc_memory(reset_options=ResetOption.all())
         else:
-            card.reset_euicc_memory(reset_options=args.options)
+            card.isd_r.reset_euicc_memory(reset_options=args.option)
     else:
         raise ValueError(f"Unknown euicc command: {args.euicc_command}")

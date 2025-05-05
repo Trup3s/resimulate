@@ -26,7 +26,7 @@ def add_subparser(
         help="List all profiles installed on the euicc.",
     )
     list_parser.add_argument(
-        "-aid",
+        "-a",
         "--isdp-aid",
         required=False,
         type=str,
@@ -40,12 +40,12 @@ def add_subparser(
         help="Filter by ICCID (e.g. '89014103211118510720')",
     )
     list_parser.add_argument(
-        "-pc",
+        "-c",
         "--profile-class",
         required=False,
         type=ProfileClass,
         action=EnumAction,
-        help="Filter by profile class (e.g. '1' or '2')",
+        help="Filter by profile class",
     )
 
     enable_parser: argparse.ArgumentParser = profile_subparser.add_parser(
@@ -54,7 +54,7 @@ def add_subparser(
         help="Enable a profile on the euicc.",
     )
     enable_parser.add_argument(
-        "-aid",
+        "-a",
         "--isdp-aid",
         required=False,
         type=str,
@@ -80,7 +80,7 @@ def add_subparser(
         help="Disable a profile on the euicc.",
     )
     disable_parser.add_argument(
-        "-aid",
+        "-a",
         "--isdp-aid",
         required=False,
         type=str,
@@ -113,7 +113,7 @@ def add_subparser(
         help="ICCID of the profile to delete (e.g. '89014103211118510720')",
     )
     delete_parser.add_argument(
-        "-aid",
+        "-a",
         "--isdp-aid",
         required=False,
         type=str,

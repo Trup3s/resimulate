@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import IntEnum
 
 import rich.repr
 from pydantic import ConfigDict, Field
@@ -7,17 +7,17 @@ from resimulate.euicc.encoder import HexStr, Image
 from resimulate.euicc.models import EuiccModel, PprIds
 
 
-class ProfileState(int, Enum):
+class ProfileState(IntEnum):
     DISABLED = 0
     ENABLED = 1
 
 
-class IconType(int, Enum):
+class IconType(IntEnum):
     JPG = 0
     PNG = 1
 
 
-class ProfileClass(int, Enum):
+class ProfileClass(IntEnum):
     TEST = 0
     PROVISIONING = 1
     PRODUCTION = 2

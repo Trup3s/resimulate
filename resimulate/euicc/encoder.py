@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from enum import IntEnum
 from io import BytesIO
 from typing import Any
 
@@ -91,10 +92,18 @@ class VersionType(HexBase):
 
 
 class BitStringMeta(type):
-    def __new__(mcs, name, bases, namespace):
+    def __new__(mcs, name, bases, namespace, **kwargs):
+        if enum := kwargs.get("enum"):
+            if not issubclass(enum, IntEnum):
+                raise TypeError("enum must be an IntEnum subclass")
+
+            members = enum.__members__
+        else:
+            members: dict[str, int] = namespace
+
         flags = {
             key: value
-            for key, value in namespace.items()
+            for key, value in members.items()
             if not key.startswith("_") and isinstance(value, int)
         }
         namespace["_flags"] = flags
@@ -104,7 +113,7 @@ class BitStringMeta(type):
 class BitString(PydanticSerializableMixin, metaclass=BitStringMeta):
     def __init__(self, bitstring: bytes, length: int = None):
         self._bitstring = bitstring
-        self._length = length or len(bitstring) * 8
+        self._length = length or len(bitstring)
 
     @classmethod
     def validate(cls, value: Any) -> "BitString":
@@ -116,7 +125,7 @@ class BitString(PydanticSerializableMixin, metaclass=BitStringMeta):
         raise TypeError(f"Expected bytes or (bytes, length) tuple, got {type(value)}")
 
     @classmethod
-    def serialize(cls, value: "BitString", *args, **kwargs) -> str:
+    def serialize(cls, value: "BitString", *args, **kwargs) -> tuple[bytes, int]:
         return value._bitstring, value._length
 
     def is_set(self, flag_name: str) -> bool:
@@ -131,6 +140,24 @@ class BitString(PydanticSerializableMixin, metaclass=BitStringMeta):
             return False
 
         return bool((self._bitstring[byte_index] >> bit_index) & 1)
+
+    @classmethod
+    def from_flags(cls, flags: list[int]) -> "BitString":
+        """Create a BitString from a list of flags.
+
+        Args:
+            flags (list[int]): indexes of the flags to set
+
+        Returns:
+            BitString: BitString object with the specified flags set
+        """
+        bitstring = bytearray((0,) * ((max(flags) // 8) + 1))
+        for flag in flags:
+            byte_index = flag // 8
+            bit_index = 7 - (flag % 8)
+            bitstring[byte_index] |= 1 << bit_index
+
+        return cls(bytes(bitstring), len(bitstring) * 8)
 
     def __repr__(self) -> str:
         flags = [name for name in self._flags if self.is_set(name)]

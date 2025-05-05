@@ -16,6 +16,7 @@ from resimulate.euicc.models.info import EuiccInfo1, EuiccInfo2
 from resimulate.euicc.models.notification import (
     LoadRpmPackageResultSigned,
     Notification,
+    NotificationEvent,
     NotificationType,
     OtherSignedNotification,
     ProfileInstallationResult,
@@ -393,16 +394,19 @@ class ISDR(Application):
         self,
         seq_number: int | None = None,
         notification_type: NotificationType | None = None,
-    ) -> list[ProfileInstallationResult | OtherSignedNotification]:
+    ) -> list[
+        ProfileInstallationResult | OtherSignedNotification | LoadRpmPackageResultSigned
+    ]:
         search_criteria = None
         if seq_number:
             search_criteria = {"searchCriteria": ("seqNumber", seq_number)}
 
         if notification_type:
+            bit_string = NotificationEvent.from_flags([notification_type.value])
             search_criteria = {
                 "searchCriteria": (
                     "profileManagementOperation",
-                    notification_type.value,
+                    NotificationEvent.serialize(bit_string),
                 )
             }
 
@@ -447,6 +451,7 @@ class ISDR(Application):
             ProfileInstallationResult
             | OtherSignedNotification
             | LoadRpmPackageResultSigned
+            | Notification
         ],
         remove: bool = True,
     ) -> list[int]:
@@ -459,6 +464,12 @@ class ISDR(Application):
                 meta = notification.tbs_other_notification
             elif isinstance(notification, LoadRpmPackageResultSigned):
                 meta = notification.load_rpm_package_result_data_signed.notification
+            elif isinstance(notification, Notification):
+                meta = notification
+            else:
+                raise ValueError(
+                    f"Invalid notification type. Expected ProfileInstallationResult, OtherSignedNotification, or LoadRpmPackageResultSigned but got {type(notification)}"
+                )
 
             smdp_client = SmdpClient(smdp_address=meta.address, verify_ssl=False)
             logging.debug(f"Processing notification from {meta.address}")
@@ -533,7 +544,7 @@ class ISDR(Application):
             {
                 "resetOptions": (
                     bin(reset_value)[2:].encode(),
-                    max(option.value + 1 for option in reset_options),
+                    len(list(ResetOption)),
                 )
             },
         )

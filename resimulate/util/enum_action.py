@@ -19,7 +19,7 @@ class EnumAction(argparse.Action):
             raise TypeError("type must be an Enum when using EnumAction")
 
         # Generate choices from the Enum
-        kwargs.setdefault("choices", tuple(f"{e.value}: {e.name}" for e in enum_type))
+        kwargs.setdefault("choices", tuple(str(e.name).lower() for e in enum_type))
 
         super(EnumAction, self).__init__(**kwargs)
 
@@ -27,5 +27,5 @@ class EnumAction(argparse.Action):
 
     def __call__(self, parser, namespace, values, option_string=None):
         # Convert value back into an Enum
-        value = self._enum(values)
+        value = self._enum[values.upper()]
         setattr(namespace, self.dest, value)

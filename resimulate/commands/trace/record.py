@@ -14,6 +14,7 @@ def add_subparser(
         "record",
         formatter_class=RichHelpFormatter,
         help="Record APDU commands from a specified source.",
+        description="Record APDU commands from a specified source. The recorder relies on simtrace-sniff to be running in the background and sending the apdus as udp packages to a local socket. First start the recording and the simtrace-sniff to not block the socket.",
     )
     parser.add_argument(
         "-o",
@@ -27,12 +28,23 @@ def add_subparser(
         type=ISDR_AID.from_description,
         default=ISDR_AID.DEFAULT.description,
         choices=ISDR_AID.get_all_descriptions(),
-        help="ISD-R to use",
+        help="ISD-R to use. (default: %(default)s)",
     )
-    parser.add_argument("-i", "--bind-ip", default="127.0.0.1", help="Local IP to bind")
-    parser.add_argument("-p", "--bind-port", default=4729, help="Local UDP port")
     parser.add_argument(
-        "-t", "--timeout", type=int, default=15, help="Timeout in seconds"
+        "-i",
+        "--bind-ip",
+        default="127.0.0.1",
+        help="Local IP to bind. (default: %(default)s)",
+    )
+    parser.add_argument(
+        "-p", "--bind-port", default=4729, help="Local UDP port. (default: %(default)s)"
+    )
+    parser.add_argument(
+        "-t",
+        "--timeout",
+        type=int,
+        default=15,
+        help="Timeout in seconds. (default: %(default)s)",
     )
 
 

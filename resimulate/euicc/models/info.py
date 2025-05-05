@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import IntEnum
 
 import rich.repr
 from pydantic import Field
@@ -77,7 +77,7 @@ class UICCCapability(BitString):
     USAT_APP_PAIRING = 39
 
 
-class EuiccCategory(int, Enum):
+class EuiccCategory(IntEnum):
     OTHER = 0
     BASIC_EUICC = 1
     MEDIUM_EUICC = 2
@@ -95,7 +95,7 @@ class CertificationDataObject(EuiccModel):
     discovery_base_url: str = Field(alias="discoveryBaseURL")
 
 
-class LpaMode(int, Enum):
+class LpaMode(IntEnum):
     LPA_D = 0
     LPA_E = 1
 
