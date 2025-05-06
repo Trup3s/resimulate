@@ -22,7 +22,7 @@ ReSIMulate is a terminal application and library built for eSIM and SIM-specific
 
 Options:
   -h, --help            show this help message and exit
-  --version             show program's version number and exit
+  --version             show programs version number and exit
   -v, --verbose         Enable verbose output during replay.
   -p, --pcsc-device {0}
                         PC/SC device index (default: 0). 0: OMNIKEY 3x21 Smart Card Reader
