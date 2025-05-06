@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from enum import IntEnum
 from typing import Literal, Union
 
@@ -88,19 +89,31 @@ class ProfileInstallationResultData(EuiccModel):
     ] = Field(alias="finalResult")
 
 
+class PendingNotification(EuiccModel, ABC):
+    @abstractmethod
+    def get_notification(self) -> Notification:
+        pass
+
+
 @rich.repr.auto
-class ProfileInstallationResult(EuiccModel):
+class ProfileInstallationResult(PendingNotification):
     data: ProfileInstallationResultData = Field(alias="profileInstallationResultData")
     euicc_sign_pir: HexStr = Field(alias="euiccSignPIR")
 
+    def get_notification(self) -> Notification:
+        return self.data.notification
+
 
 @rich.repr.auto
-class OtherSignedNotification(EuiccModel):
+class OtherSignedNotification(PendingNotification):
     tbs_other_notification: Notification = Field(alias="tbsOtherNotification")
     euicc_notification_signature: HexStr = Field(alias="euiccNotificationSignature")
     euicc_certificate: HexStr = Field(alias="euiccCertificate")
     next_cert_in_chain: HexStr = Field(alias="nextCertInChain")
     other_certs_in_chain: list[HexStr] = Field(alias="otherCertsInChain", default=[])
+
+    def get_notification(self) -> Notification:
+        return self.tbs_other_notification
 
 
 class RpmCommandResult(EuiccModel):
@@ -121,8 +134,11 @@ class LoadRpmPackageResultDataSigned(EuiccModel):
 
 
 @rich.repr.auto
-class LoadRpmPackageResultSigned(EuiccModel):
+class LoadRpmPackageResultSigned(PendingNotification):
     load_rpm_package_result_data_signed: LoadRpmPackageResultDataSigned = Field(
         alias="loadRpmPackageResultDataSigned"
     )
     euicc_sign_rpr: HexStr = Field(alias="euiccSignRPR")
+
+    def get_notification(self) -> Notification:
+        return self.load_rpm_package_result_data_signed.notification

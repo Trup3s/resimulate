@@ -1,5 +1,7 @@
 from enum import IntEnum
 
+from resimulate.euicc.encoder import BitString
+
 
 class ResetOption(IntEnum):
     DELETE_OPERATIONAL_PROFILES = 0
@@ -11,3 +13,7 @@ class ResetOption(IntEnum):
     @staticmethod
     def all():
         return list(ResetOption)
+
+
+class ResetOptionBitString(BitString, enum=ResetOption):
+    pass

@@ -33,13 +33,6 @@ def add_subparser(
         action=EnumAction,
         help="Filter by notification type",
     )
-    list_parser.add_argument(
-        "-n",
-        "--sequence-number",
-        required=False,
-        type=int,
-        help="Filter by sequence number (e.g. '1' or '2')",
-    )
 
     process_parser: argparse.ArgumentParser = notification_subparser.add_parser(
         "process",
@@ -91,31 +84,23 @@ def add_subparser(
 
 def run(args: argparse.Namespace, card: Card) -> None:
     if args.notification_command == "list":
-        if args.type and args.sequence_number:
-            raise ValueError(
-                "Cannot specify both --type and --sequence-number at the same time."
-            )
-
-        print(
-            card.isd_r.retrieve_notification_list(
-                seq_number=args.sequence_number, notification_type=args.type
-            )
-        )
+        print(card.isd_r.get_notifications(notification_type=args.type))
     elif args.notification_command == "process":
-        notifications = card.isd_r.get_notifications()
+        pending_notifications = card.isd_r.retrieve_notification_list()
         if args.all:
             card.isd_r.process_notifications(
-                notifications=notifications, remove=args.remove
+                pending_notifications=pending_notifications, remove=args.remove
             )
         elif args.sequence_numbers:
             relevant_notifications = [
-                notification
-                for notification in notifications
-                if notification.seq_number in args.sequence_numbers
+                pending_notification
+                for pending_notification in pending_notifications
+                if pending_notification.get_notification().seq_number
+                in args.sequence_numbers
             ]
 
             card.isd_r.process_notifications(
-                notifications=relevant_notifications, remove=args.remove
+                pending_notifications=relevant_notifications, remove=args.remove
             )
         else:
             raise ValueError(
@@ -128,7 +113,7 @@ def run(args: argparse.Namespace, card: Card) -> None:
                 card.isd_r.remove_notification(seq_number=notification.seq_number)
         elif args.sequence_numbers:
             for seq_number in args.sequence_numbers:
-                card.isd_r.remove_notification(seq_number=args.sequence_number)
+                card.isd_r.remove_notification(seq_number=seq_number)
         else:
             raise ValueError(
                 "Must specify either --all or --sequence-number to remove notifications."

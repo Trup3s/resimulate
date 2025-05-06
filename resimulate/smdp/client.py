@@ -6,7 +6,9 @@ import httpx
 from resimulate.asn import asn
 from resimulate.euicc.models.info import EuiccInfo1
 from resimulate.euicc.models.notification import (
+    LoadRpmPackageResultSigned,
     OtherSignedNotification,
+    PendingNotification,
     ProfileInstallationResult,
 )
 from resimulate.smdp.exceptions import SmdpException
@@ -121,16 +123,24 @@ class SmdpClient(httpx.Client):
         return bpp_response
 
     def handle_notification(
-        self, pending_notification: ProfileInstallationResult | OtherSignedNotification
+        self,
+        pending_notification: PendingNotification,
     ) -> None:
         data = pending_notification.model_dump()
         seq_number = None
         if isinstance(pending_notification, ProfileInstallationResult):
             notification = ("profileInstallationResult", data)
             seq_number = pending_notification.data.notification.seq_number
-        else:
+        elif isinstance(pending_notification, OtherSignedNotification):
             notification = ("otherSignedNotification", data)
             seq_number = pending_notification.tbs_other_notification.seq_number
+        elif isinstance(pending_notification, LoadRpmPackageResultSigned):
+            notification = ("loadRpmPackageResultDataSigned", data)
+            seq_number = pending_notification.load_rpm_package_result_data_signed.notification.seq_number
+        else:
+            raise SmdpException(
+                f"Unsupported notification type: {type(pending_notification)}"
+            )
 
         encoded_notification = asn.encode(
             "PendingNotification",

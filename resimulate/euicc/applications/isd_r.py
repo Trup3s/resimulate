@@ -19,10 +19,11 @@ from resimulate.euicc.models.notification import (
     NotificationEvent,
     NotificationType,
     OtherSignedNotification,
+    PendingNotification,
     ProfileInstallationResult,
 )
 from resimulate.euicc.models.profile import Profile, ProfileClass
-from resimulate.euicc.models.reset_option import ResetOption
+from resimulate.euicc.models.reset_option import ResetOption, ResetOptionBitString
 from resimulate.smdp.client import SmdpClient
 from resimulate.smdp.models import (
     AuthenticateClientResponse,
@@ -394,9 +395,7 @@ class ISDR(Application):
         self,
         seq_number: int | None = None,
         notification_type: NotificationType | None = None,
-    ) -> list[
-        ProfileInstallationResult | OtherSignedNotification | LoadRpmPackageResultSigned
-    ]:
+    ) -> list[PendingNotification]:
         search_criteria = None
         if seq_number:
             search_criteria = {"searchCriteria": ("seqNumber", seq_number)}
@@ -447,43 +446,28 @@ class ISDR(Application):
 
     def process_notifications(
         self,
-        notifications: list[
-            ProfileInstallationResult
-            | OtherSignedNotification
-            | LoadRpmPackageResultSigned
-            | Notification
-        ],
+        pending_notifications: list[PendingNotification],
         remove: bool = True,
     ) -> list[int]:
         processed_notification_seq_numbers = []
-        for notification in notifications:
-            meta = None
-            if isinstance(notification, ProfileInstallationResult):
-                meta = notification.data.notification
-            elif isinstance(notification, OtherSignedNotification):
-                meta = notification.tbs_other_notification
-            elif isinstance(notification, LoadRpmPackageResultSigned):
-                meta = notification.load_rpm_package_result_data_signed.notification
-            elif isinstance(notification, Notification):
-                meta = notification
-            else:
-                raise ValueError(
-                    f"Invalid notification type. Expected ProfileInstallationResult, OtherSignedNotification, or LoadRpmPackageResultSigned but got {type(notification)}"
-                )
+        for pending_notification in pending_notifications:
+            notification = pending_notification.get_notification()
 
-            smdp_client = SmdpClient(smdp_address=meta.address, verify_ssl=False)
-            logging.debug(f"Processing notification from {meta.address}")
+            smdp_client = SmdpClient(
+                smdp_address=notification.address, verify_ssl=False
+            )
+            logging.debug(f"Processing notification from {notification.address}")
 
             try:
-                smdp_client.handle_notification(notification)
+                smdp_client.handle_notification(pending_notification)
 
                 if remove:
-                    self.remove_notification(meta.seq_number)
+                    self.remove_notification(notification.seq_number)
             except NotificationException as e:
                 logging.error(f"Failed to process notification: {e}")
                 continue
 
-            processed_notification_seq_numbers.append(meta.seq_number)
+            processed_notification_seq_numbers.append(notification.seq_number)
 
         return processed_notification_seq_numbers
 
@@ -532,20 +516,15 @@ class ISDR(Application):
         if not isinstance(reset_options, list):
             reset_options = [reset_options]
 
-        reset_value = 0
-        for option in reset_options:
-            reset_value |= 1 << option.value
-
-        logging.debug(f"Reset options: {bin(reset_value)}")
+        bit_string = ResetOptionBitString.from_flags(
+            [option.value for option in reset_options]
+        )
 
         response = self.store_data(
             "EuiccMemoryResetRequest",
             "EuiccMemoryResetResponse",
             {
-                "resetOptions": (
-                    bin(reset_value)[2:].encode(),
-                    len(list(ResetOption)),
-                )
+                "resetOptions": ResetOptionBitString.serialize(bit_string),
             },
         )
         logging.debug(f"ResetEuiccMemoryResponse: {response}")
