@@ -22,7 +22,7 @@ from resimulate.euicc.models.notification import (
     PendingNotification,
     ProfileInstallationResult,
 )
-from resimulate.euicc.models.profile import Profile, ProfileClass
+from resimulate.euicc.models.profile import Profile, ProfileClass, ProfileInfoTag
 from resimulate.euicc.models.reset_option import ResetOption, ResetOptionBitString
 from resimulate.smdp.client import SmdpClient
 from resimulate.smdp.models import (
@@ -30,7 +30,7 @@ from resimulate.smdp.models import (
     GetBoundProfilePackageResponse,
     InitiateAuthenticationResponse,
 )
-from resimulate.util import i2h
+from resimulate.util import h2b, i2h
 
 
 class ISDR(Application):
@@ -335,31 +335,23 @@ class ISDR(Application):
         isdp_aid: str | None = None,
         iccid: str | None = None,
         profile_class: ProfileClass | None = None,
-        tags: list[str] | None = None,
+        tags: list[ProfileInfoTag] | None = None,
     ) -> list[Profile]:
-        search_criteria = {}
+        request_data = {}
         if isdp_aid:
-            if len(isdp_aid) <= 16:
-                raise ValueError("IDP AID must be at least 16 characters long.")
-
-            search_criteria["isdpAid"] = isdp_aid
-
-        if iccid:
-            if len(iccid) != 10:
-                raise ValueError("ICCID must be 10 digits long.")
-
-            search_criteria["iccid"] = iccid
-
-        if profile_class:
-            search_criteria["profileClass"] = profile_class.value
+            request_data["search_criteria"] = ("isdpAid", isdp_aid)
+        elif iccid:
+            request_data["search_criteria"] = ("iccid", iccid)
+        elif profile_class:
+            request_data["search_criteria"] = ("profileClass", profile_class.value)
 
         if tags:
-            # TODO: Check how properly send tags
-            search_criteria["tags"] = tags
+            request_data["tagList"] = h2b(" ".join([tag.value for tag in tags]))
 
         response = self.store_data(
             "ProfileInfoListRequest",
             "ProfileInfoListResponse",
+            request_data,
         )
 
         logging.debug(f"ListProfilesResponse: {response}")
@@ -535,7 +527,7 @@ class ISDR(Application):
         return True
 
     def download_profile(self, profile: ActivationProfile) -> ProfileInstallationResult:
-        smdp_address = profile.smdpp_address
+        smdp_address = profile.smdp_address
         if not smdp_address:
             smdp_address = self.get_configured_data().default_dp_address
 

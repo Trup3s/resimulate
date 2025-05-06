@@ -1,10 +1,36 @@
-from enum import IntEnum
+from enum import IntEnum, StrEnum
 
 import rich.repr
 from pydantic import ConfigDict, Field
 
 from resimulate.euicc.encoder import HexStr, Image
 from resimulate.euicc.models import EuiccModel, PprIds
+from resimulate.euicc.models.notification import NotificationEvent
+
+
+class ProfileInfoTag(StrEnum):
+    ICCID = "5A"
+    ISDP_AID = "4F"
+    PROFILE_STATE = "9F70"
+    NICKNAME = "90"
+    SERVICE_PROVIDER_NAME = "91"
+    PROFILE_NAME = "92"
+    ICON_TYPE = "93"
+    ICON = "94"
+    PROFILE_CLASS = "95"
+    NOTIFICATION_CONFIGURATION_INFO = "B6"
+    PROFILE_OWNER = "B7"
+    DP_PROPRIETARY_DATA = "B8"
+    PROFILE_POLICY_RULES = "99"
+    SERVICE_SPECIFIC_DATA_STORED_IN_EUICC = "BF22"
+    RPM_CONFIGURATION = "BA"
+    HRI_SERVER_ADDRESS = "9B"
+    LPR_CONFIGURATION = "BC"
+    ENTERPRISE_CONFIGURATION = "BD"
+    SERVICE_DESCRIPTION = "9F1F"
+    DEVICE_CHANGE_CONFIGURATION = "BF20"
+    ENABLED_ON_ESIM_PORT = "9F24"
+    PROFILE_SIZE = "9F25"
 
 
 class ProfileState(IntEnum):
@@ -29,6 +55,13 @@ class OperatorId(EuiccModel):
     gid_2: HexStr | None = Field(alias="gid2", default=None)
 
 
+class NotificationConfigurationInfo(EuiccModel):
+    profile_management_operation: NotificationEvent = Field(
+        alias="profileManagementOperation"
+    )
+    notification_address: str = Field(alias="notificationAddress")
+
+
 @rich.repr.auto
 class Profile(EuiccModel):
     iccid: HexStr | None = None
@@ -40,7 +73,7 @@ class Profile(EuiccModel):
     icon_type: IconType | None = Field(alias="iconType", default=None)
     icon: Image | None = Field(alias="icon", default=None)
     profile_class: ProfileClass | None = Field(alias="profileClass", default=None)
-    notification_configuration_info: list[str] | None = Field(
+    notification_configuration_info: list[NotificationConfigurationInfo] | None = Field(
         alias="notificationConfigurationInfo", default=None
     )
     profile_owner: OperatorId | None = Field(alias="profileOwner", default=None)

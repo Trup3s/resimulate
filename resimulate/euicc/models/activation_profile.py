@@ -3,13 +3,13 @@ from dataclasses import dataclass
 
 @dataclass
 class ActivationProfile:
-    smdpp_address: str
+    smdp_address: str
     matching_id: str
     confirmation_code: str | None = None
 
     @property
     def full_activation_code(self) -> str:
-        return f"LPA:1${self.smdpp_address}${self.matching_id}"
+        return f"LPA:1${self.smdp_address}${self.matching_id}"
 
     @staticmethod
     def from_activation_code(activation_code: str) -> "ActivationProfile":

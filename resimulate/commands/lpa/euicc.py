@@ -61,9 +61,8 @@ def add_subparser(
         help="Reset the EUICC memory.",
     )
     reset_euicc_memory_parser.add_argument(
-        "-o",
-        "--option",
-        required=False,
+        "option",
+        nargs="?",
         type=ResetOption,
         action=EnumAction,
         help="Reset option",
@@ -73,7 +72,7 @@ def add_subparser(
         "--all",
         action="store_true",
         default=False,
-        help="Reset all options (overrides --options)",
+        help="Reset all options (overrides --option)",
     )
 
 
