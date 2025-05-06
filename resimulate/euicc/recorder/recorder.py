@@ -1,24 +1,73 @@
 import logging
 import pickle
 
-from resimulate.euicc.recorder.operation import Operation
+from resimulate.euicc.mutation.types import MutationType
+from resimulate.euicc.recorder.operation import (
+    MutationRecording,
+    MutationTreeNode,
+)
 from resimulate.util.name_generator import generate_name
 
 
 class OperationRecorder:
-    def __init__(self):
-        self.recordings: list[Operation] = []
-        self.atr = None
-        self.name = None
+    answer_to_request = None
+    name = None
+    root: MutationTreeNode
+    current_node: MutationTreeNode
 
-    def record(self, operation: Operation):
-        self.recordings.append(operation)
+    def __init__(self):
+        self.clear()
+
+    def record(self, recording: MutationRecording):
+        self.current_node.recording = recording
+
+    def add_new_mutation_node(self, func_name: str, mutation_type: MutationType):
+        node = MutationTreeNode(func_name=func_name, mutation_type=mutation_type)
+        self.current_node.add_child(node)
+        self.current_node = node
+
+    def get_next_mutation(self, func_name: str) -> MutationTreeNode | None:
+        not_tried_mutations = self.current_node.get_not_tried_mutations()
+        if not_tried_mutations:
+            logging.debug("Current node has not tried mutations...")
+            mutation_type = not_tried_mutations.pop()
+            self.add_new_mutation_node(
+                func_name=func_name,
+                mutation_type=mutation_type,
+            )
+            return mutation_type
+
+        none_mutation_node = None
+        for child in self.current_node.children:
+            if child.failure_reason:
+                continue
+
+            not_tried_mutations = child.get_not_tried_mutations()
+
+            if not_tried_mutations:
+                self.current_node = child
+                logging.debug(
+                    f"Found a child with not tried mutations: {child.func_name} -> {child.mutation_type}"
+                )
+                return child.mutation_type
+
+            if child.mutation_type is MutationType.NONE:
+                none_mutation_node = child
+
+        assert none_mutation_node is not None, "No child with NONE mutation node found!"
         logging.debug(
-            f"Recorded operation: {operation.func_name} with {len(operation.mutation_recordings)} mutations"
+            "Could not find a child with not tried mutations, continuing with NONE mutation node!"
         )
+        return none_mutation_node
 
     def clear(self):
-        self.recordings.clear()
+        self.root = MutationTreeNode(func_name="root", mutation_type=MutationType.NONE)
+        self.current_node = self.root
+        logging.debug("Cleared all recorded operations")
+
+    def reset(self):
+        logging.debug("Resetting recorder")
+        self.current_node = self.root
 
     def save_file(self, file_path: str):
         logging.debug(f"Saving recording to {file_path}")
@@ -29,43 +78,31 @@ class OperationRecorder:
         self,
         compare_recorder: "OperationRecorder",
     ):
-        main_name = self.name or generate_name(self.atr)
-        compare_name = compare_recorder.name or generate_name(compare_recorder.atr)
-        differences = {}
-
-        logging.debug(f"Comparing {main_name} with {compare_name}")
-
-        for main_operation in self.recordings:
-            operations_by_func_name = {
-                operation.func_name: operation
-                for operation in compare_recorder.recordings
-            }
-            compare_operation = operations_by_func_name.get(main_operation.func_name)
-
-            if not compare_operation:
-                continue
-
-            compare_difference = main_operation.compare(compare_operation)
-
-            if compare_difference:
-                differences[main_operation.func_name] = compare_difference
-                logging.debug(
-                    f"Found differences in {main_operation.func_name}: {compare_difference}"
-                )
-
-        return {"main": main_name, "compare": compare_name, "differences": differences}
+        return self.root.compare(other=compare_recorder.root)
 
     @staticmethod
     def compare_multiple(
         main_recording: "OperationRecorder",
         compare_recordings: list["OperationRecorder"],
     ):
-        differences = []
+        differences = {}
+        main_name = main_recording.name or generate_name(
+            main_recording.answer_to_request
+        )
         for compare_recording in compare_recordings:
+            compare_name = compare_recording.name or generate_name(
+                compare_recording.answer_to_request
+            )
+
+            logging.debug(f"Comparing main {main_name} with {compare_name}")
             diff = main_recording.compare(compare_recording)
 
-            if diff["differences"]:
-                differences.append(diff)
+            if diff:
+                differences[main_name, compare_name] = diff
+            else:
+                logging.debug(
+                    f"No differences found between {main_name} and {compare_name}"
+                )
 
         return differences
 
@@ -82,9 +119,7 @@ class OperationRecorder:
                 compare_recorder.name = compare_recording_path
 
                 compare_recordings.append(compare_recorder)
-                logging.debug(
-                    f"Loaded compare recording: {compare_recording_path} with {len(compare_recorder.recordings)} mutations"
-                )
+                logging.debug(f"Loaded compare recording: {compare_recording_path}")
 
         return OperationRecorder.compare_multiple(
             main_recorder,

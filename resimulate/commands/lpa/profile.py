@@ -1,6 +1,7 @@
 import argparse
 
 from rich import print
+from rich.prompt import Prompt
 from rich_argparse import RichHelpFormatter
 
 from resimulate.euicc.card import Card
@@ -213,6 +214,11 @@ def run(args: argparse.Namespace, card: Card) -> None:
                 "Either activation code or SMDP address and matching ID must be provided."
             )
 
-        card.isd_r.download_profile(profile)
+        notification = card.isd_r.download_profile(profile)
+        process_notification = Prompt.ask(
+            "Process notification?", choices=["y", "n"], default="y"
+        )
+        if process_notification == "y":
+            card.isd_r.process_notifications([notification], remove=True)
     else:
         raise ValueError(f"Unknown profile command: {args.profile_command}")

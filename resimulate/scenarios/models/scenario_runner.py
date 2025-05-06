@@ -1,13 +1,13 @@
 import logging
 import os
 
+from resimulate.euicc import exceptions
 from resimulate.euicc.card import Card
 from resimulate.euicc.models.reset_option import ResetOption
 from resimulate.euicc.mutation.engine import MutationEngine
 from resimulate.euicc.recorder.recorder import OperationRecorder
 from resimulate.euicc.transport.pcsc_link import PcscLink
 from resimulate.scenarios.models.scenario import Scenario
-from resimulate.euicc import exceptions
 
 
 class ScenarioRunner:
@@ -15,8 +15,7 @@ class ScenarioRunner:
         self.scenarios = scenarios
 
     def run_scenarios(self):
-        recorder = OperationRecorder()
-        with PcscLink(recorder=recorder) as link:
+        with PcscLink() as link:
             card = Card(link)
             for scenario in self.scenarios:
                 logging.debug(f"Running scenario: {scenario}")
@@ -28,13 +27,9 @@ class ScenarioRunner:
                     logging.exception(e)
                     continue
                 finally:
-                    link.reset_card()
+                    link._reset_card()
 
     def __clear_card(self, card: Card):
-        profiles = card.isd_r.get_profiles()
-        for profile in profiles:
-            card.isd_r.delete_profile(profile.iccid)
-
         notifications = card.isd_r.retrieve_notification_list()
         if notifications:
             card.isd_r.process_notifications(notifications)
@@ -47,15 +42,16 @@ class ScenarioRunner:
     def record_card(
         self,
         card_name: str,
+        mutation_engine: MutationEngine,
         path: str | None = None,
         overwrite: bool = False,
-        mutation_engine: MutationEngine | None = None,
     ):
         recorder = OperationRecorder()
-        with PcscLink(recorder=recorder, mutation_engine=mutation_engine) as link:
+        with PcscLink(recorder=recorder) as link:
             card = Card(link)
             self.__clear_card(card)
 
+            link.mutation_engine = mutation_engine
             for scenario_cls in self.scenarios:
                 scenario_name = scenario_cls.__qualname__
                 if mutation_engine:
@@ -63,16 +59,40 @@ class ScenarioRunner:
                         f"{scenario_name}_{type(mutation_engine).__qualname__}"
                     )
                 logging.info(f"Recording scenario: {scenario_name}")
-                try:
-                    scenario_cls(link).run(card)
-                except Exception as e:
-                    logging.error(f"Error running scenario {scenario_name}: {e}")
-                    logging.exception(e)
-                finally:
+                while True:
                     try:
-                        card.isd_r.reset_euicc_memory(reset_options=ResetOption.all())
-                    except exceptions.EuiccException:
-                        logging.warning("Card is not in a clean state. Skipping reset.")
+                        scenario_cls(link).run(card)
+                        recorder.current_node.leaf = True
+                    except (exceptions.EuiccException, AssertionError) as e:
+                        logging.debug(
+                            f"Scenario {scenario_name} failed on operation {recorder.current_node.func_name}... Resetting and continuing!"
+                        )
+                        recorder.current_node.failure_reason = e.__class__.__name__
+                        continue
+                    finally:
+                        link.mutation_engine = None
+                        try:
+                            card.isd_r.reset_euicc_memory(
+                                reset_options=ResetOption.all()
+                            )
+                        except Exception:
+                            logging.debug(
+                                "Failed to reset card after scenario execution"
+                            )
+
+                        link.mutation_engine = mutation_engine
+                        recorder.reset()
+
+                    if not recorder.root.tree_has_not_tried_mutations():
+                        logging.info(
+                            f"Scenario {scenario_name} finished with all mutations tried!"
+                        )
+                        recorder.root.print_tree()
+                        break
+
+                    logging.debug(
+                        f"Scenario {scenario_name} finished with untried mutations! Continuing..."
+                    )
 
                 file_name = f"{card_name}_{scenario_name}.resim"
                 if path:
@@ -89,4 +109,4 @@ class ScenarioRunner:
 
                 recorder.save_file(file_path)
                 recorder.clear()
-                link.reset_card()
+                link._reset_card()

@@ -14,21 +14,21 @@ class ESTK_FWUPD(Application):
 
     def unlock(self):
         apdu = APDUPacket(cla=0xAA, ins=0x21, p1=0x00, p2=0x00)
-        _, sw = self.link.send_apdu_with_mutation(self.name, "unlock", apdu)
+        _, sw = self.link.send_apdu_with_mutation("unlock", apdu)
 
         if not sw_match(sw, "9000"):
             raise ApduException(sw)
 
     def setup(self):
         apdu = APDUPacket(cla=0x01, ins=0x55, p1=0x55, p2=0x55)
-        _, sw = self.link.send_apdu_with_mutation(self.name, "setup", apdu)
+        _, sw = self.link.send_apdu_with_mutation("setup", apdu)
 
         if not sw_match(sw, "9000"):
             raise ApduException(sw)
 
     def check_flash_status(self):
         apdu = APDUPacket(cla=0xAA, ins=0x13, p1=0x00, p2=0x00)
-        _, sw = self.link.send_apdu_with_mutation(self.name, "check_flash_status", apdu)
+        _, sw = self.link.send_apdu_with_mutation("check_flash_status", apdu)
 
         if not sw_match(sw, "9000"):
             raise ApduException(sw)
@@ -37,7 +37,7 @@ class ESTK_FWUPD(Application):
         self.setup()
         # TODO: Fix transaction failure
         apdu = APDUPacket(cla=0xAA, ins=0xFF, p1=0x00, p2=0x00, le=0x08)
-        data, sw = self.link.send_apdu_with_mutation(self.name, "get_version", apdu)
+        data, sw = self.link.send_apdu_with_mutation("get_version", apdu)
         if not sw_match(sw, "9000"):
             raise ApduException(sw)
 
@@ -67,7 +67,7 @@ class ESTK_FWUPD(Application):
                 if validate
                 else f"send_program_block_{block_id}"
             )
-            _, sw = self.link.send_apdu_with_mutation(self.name, name, apdu)
+            _, sw = self.link.send_apdu_with_mutation(name, apdu)
             if not sw_match(sw, "9000"):
                 raise ApduException(sw)
 
@@ -99,7 +99,7 @@ class ESTK_FWUPD(Application):
                 program_block += 1
 
         _, sw = self.link.send_apdu_with_mutation(
-            self.name, "finish_flash", APDUPacket.from_hex("aa0000000000")
+            "finish_flash", APDUPacket.from_hex("aa0000000000")
         )
         if not sw_match(sw, "9000"):
             raise ApduException(sw)

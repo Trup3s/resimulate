@@ -1,4 +1,5 @@
 import inspect
+import logging
 
 from osmocom.utils import h2b
 from pySim.utils import sw_match
@@ -40,6 +41,7 @@ class Application:
 
         command_encoded = request_data
         if request_type is not None:
+            logging.debug(f"Sending request: {request_type}")
             command_encoded = asn.encode(
                 request_type,
                 request_data,
@@ -54,7 +56,7 @@ class Application:
             caller_func_name = caller_frame.function
 
         apdu = APDUPacket(cla=0x80, ins=0xE2, p1=0x91, p2=0x00, data=command_encoded)
-        data, sw = self.link.send_apdu_with_mutation(self.name, caller_func_name, apdu)
+        data, sw = self.link.send_apdu_with_mutation(caller_func_name, apdu)
 
         if not any([sw_match(sw, pattern) for pattern in ["9000", "61??"]]):
             raise ApduException(sw)

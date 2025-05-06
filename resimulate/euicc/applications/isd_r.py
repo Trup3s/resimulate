@@ -4,6 +4,8 @@ from hashlib import sha256
 from resimulate.asn import asn
 from resimulate.euicc.applications import Application
 from resimulate.euicc.exceptions import (
+    AuthenticateException,
+    DownloadException,
     EuiccException,
     EuiccMemoryResetException,
     NotificationException,
@@ -52,10 +54,16 @@ class ISDR(Application):
 
     def get_euicc_info_1(self) -> EuiccInfo1:
         command = self.store_data("GetEuiccInfo1Request", "EUICCInfo1")
+        if not command:
+            raise EuiccException("Failed to retrieve EUICCInfo1")
+
         return EuiccInfo1(**command)
 
     def get_euicc_info_2(self) -> EuiccInfo2:
         command = self.store_data("GetEuiccInfo2Request", "EUICCInfo2")
+        if not command:
+            raise EuiccException("Failed to retrieve EUICCInfo2")
+
         return EuiccInfo2(**command)
 
     def get_configured_data(self) -> EuiccConfiguredData:
@@ -113,7 +121,7 @@ class ISDR(Application):
         result, error = response
         if result == "authenticateResponseError":
             code = error.get("authenticateErrorCode")
-            raise Exception(f"AuthenticateServerResponseErrorCode: {code}")
+            raise AuthenticateException.raise_from_code(code)
 
         return data
 
@@ -150,9 +158,9 @@ class ISDR(Application):
         )
 
         result, error = response
-        if result == "prepareDownloadError":
-            code = error.get("prepareDownloadErrorCode")
-            raise Exception(f"PrepareDownloadResponseErrorCode: {code}")
+        if result == "downloadResponseError":
+            code = error.get("downloadErrorCode")
+            raise DownloadException.raise_from_code(code)
 
         return data
 
@@ -186,7 +194,7 @@ class ISDR(Application):
                     "finalResult", (None, None)
                 )
                 if result_type == "errorResult":
-                    ProfileInstallationException.raise_from_result(data)
+                    ProfileInstallationException.raise_from_code(data)
 
             return result
 
@@ -279,7 +287,7 @@ class ISDR(Application):
         logging.debug(f"EnableProfileResponse: {response}")
 
         if response["enableResult"] != 0:
-            ProfileInteractionException.raise_from_result(response["enableResult"])
+            ProfileInteractionException.raise_from_code(response["enableResult"])
 
         return True
 
@@ -304,7 +312,7 @@ class ISDR(Application):
         logging.debug(f"DisableProfileResponse: {response}")
 
         if response["disableResult"] != 0:
-            ProfileInteractionException.raise_from_result(response["disableResult"])
+            ProfileInteractionException.raise_from_code(response["disableResult"])
 
         return True
 
@@ -326,7 +334,7 @@ class ISDR(Application):
         logging.debug(f"DeleteProfileResponse: {response}")
 
         if response["deleteResult"] != 0:
-            ProfileInteractionException.raise_from_result(response["deleteResult"])
+            ProfileInteractionException.raise_from_code(response["deleteResult"])
 
         return True
 
@@ -379,7 +387,7 @@ class ISDR(Application):
 
         key, data = response
         if key == "notificationError":
-            raise NotificationException.raise_from_result(data)
+            raise NotificationException.raise_from_code(data)
 
         return [Notification(**notification) for notification in data]
 
@@ -410,7 +418,7 @@ class ISDR(Application):
 
         key, data = response
         if key == "notificationsListResultError":
-            raise ProfileInteractionException.raise_from_result(data)
+            raise ProfileInteractionException.raise_from_code(data)
 
         notifications = []
         for key, notification in data:
@@ -434,7 +442,7 @@ class ISDR(Application):
         if result_code == 0:
             return True
 
-        NotificationException.raise_from_result(result_code)
+        NotificationException.raise_from_code(result_code)
 
     def process_notifications(
         self,
@@ -472,7 +480,7 @@ class ISDR(Application):
         logging.debug(f"SetNicknameResponse: {response}")
 
         if response["setNicknameResult"] != 0:
-            ProfileInteractionException.raise_from_result(response["setNicknameResult"])
+            ProfileInteractionException.raise_from_code(response["setNicknameResult"])
 
         return True
 
@@ -522,7 +530,7 @@ class ISDR(Application):
         logging.debug(f"ResetEuiccMemoryResponse: {response}")
 
         if response["resetResult"] != 0:
-            EuiccMemoryResetException.raise_from_result(response["resetResult"])
+            EuiccMemoryResetException.raise_from_code(response["resetResult"])
 
         return True
 

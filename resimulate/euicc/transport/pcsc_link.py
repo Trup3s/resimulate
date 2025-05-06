@@ -3,7 +3,7 @@ import logging
 from osmocom.utils import Hexstr, h2i, i2h
 from pySim.exceptions import SwMatchError
 from pySim.transport import LinkBaseTpdu
-from pySim.utils import ResTuple, sw_match
+from pySim.utils import ResTuple
 from smartcard import System
 from smartcard.CardConnection import CardConnection
 from smartcard.CardRequest import CardRequest
@@ -16,8 +16,7 @@ from smartcard.ExclusiveConnectCardConnection import ExclusiveConnectCardConnect
 from smartcard.pcsc.PCSCReader import PCSCReader
 
 from resimulate.euicc.mutation.engine import MutationEngine
-from resimulate.euicc.mutation.types import MutationType
-from resimulate.euicc.recorder.operation import MutationRecording, Operation
+from resimulate.euicc.recorder.operation import MutationRecording
 from resimulate.euicc.recorder.recorder import OperationRecorder
 from resimulate.euicc.transport.apdu import APDUPacket
 from resimulate.exceptions import PcscError
@@ -49,7 +48,7 @@ class PcscLink(LinkBaseTpdu):
         if recorder:
             logging.debug("Initializing recorder...")
             self.connect()
-            recorder.atr = self.get_atr()
+            recorder.answer_to_request = self.get_atr()
             self.disconnect()
 
         self.mutation_engine = mutation_engine
@@ -134,10 +133,8 @@ class PcscLink(LinkBaseTpdu):
         )
         return i2h(data), i2h([sw1, sw2])
 
-    def send_apdu_with_mutation(
-        self, app_name: str, func_name: str, apdu: APDUPacket
-    ) -> ResTuple:
-        def handle_apdu_tansmission(apdu: APDUPacket) -> tuple[str | None, str]:
+    def send_apdu_with_mutation(self, func_name: str, apdu: APDUPacket) -> ResTuple:
+        def handle_apdu_transmission(apdu: APDUPacket) -> tuple[str | None, str]:
             logging.debug("Sending %s", str(apdu))
 
             short_apdus = apdu.to_short_apdu(data_size=self.apdu_data_size)
@@ -153,48 +150,18 @@ class PcscLink(LinkBaseTpdu):
             return data, sw
 
         if not self.mutation_engine:
-            return handle_apdu_tansmission(apdu)
+            return handle_apdu_transmission(apdu)
 
-        recordings = []
-        mutation_types = list(MutationType) + [None]
-        success_data = None
-        success_sw = "0000"
-
-        for mutation_type in mutation_types:
-            if mutation_type is None:
-                mutated_apdu = apdu
-            else:
-                mutated_apdu = self.mutation_engine.mutate(
-                    apdu, mutation_type=mutation_type
-                )
-                logging.debug(
-                    "Testing mutation type: %s | APDU: %s -> %s",
-                    mutation_type,
-                    apdu.to_hex(),
-                    mutated_apdu.to_hex(),
-                )
-
-            data, sw = handle_apdu_tansmission(mutated_apdu)
-            if sw_match(sw, "9000"):
-                success_data = data
-                success_sw = sw
-
-            if mutation_type is not None:
-                recordings.append(
-                    MutationRecording(
-                        mutation_type,
-                        apdu,
-                        mutated_apdu,
-                        sw,
-                    )
-                )
-
-        if self.recorder:
-            operation = Operation(
-                app_name,
-                func_name,
-                mutation_recordings=recordings,
+        mutation_type = self.recorder.get_next_mutation(func_name)
+        mutated_apdu = self.mutation_engine.mutate(apdu, mutation_type=mutation_type)
+        logging.debug(f"Mutating apdu with {mutation_type}: {mutated_apdu}")
+        data, sw = handle_apdu_transmission(mutated_apdu)
+        self.recorder.record(
+            MutationRecording(
+                original_apdu=apdu,
+                mutated_apdu=mutated_apdu,
+                response_sw=sw,
             )
-            self.recorder.record(operation)
+        )
 
-        return success_data, success_sw
+        return data, sw

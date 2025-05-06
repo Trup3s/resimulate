@@ -7,3 +7,4 @@ class MutationType(StrEnum):
     ZERO_BLOCK = "zero_block"
     SHUFFLE_BLOCKS = "shuffle_blocks"
     TRUNCATE = "truncate"
+    NONE = "none"

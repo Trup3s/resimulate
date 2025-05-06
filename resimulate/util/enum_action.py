@@ -27,5 +27,8 @@ class EnumAction(argparse.Action):
 
     def __call__(self, parser, namespace, values, option_string=None):
         # Convert value back into an Enum
+        if values is None:
+            return None
+
         value = self._enum[values.upper()]
         setattr(namespace, self.dest, value)

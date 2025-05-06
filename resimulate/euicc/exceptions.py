@@ -78,10 +78,10 @@ class ApduException(EuiccException):
         super().__init__(f"{self.sw} -> {self.message}")
 
 
-class ResultBaseException(EuiccException):
+class CodeBaseException(EuiccException):
     """Base class for all exceptions raised by the result handling."""
 
-    message: str = "An unknown result error occurred"
+    message: str = "An unknown code error occurred"
     error_map: dict[int, str]
 
     def __init__(self, message: str | None = None):
@@ -91,9 +91,9 @@ class ResultBaseException(EuiccException):
         super().__init__(self.message)
 
     @classmethod
-    def raise_from_result(cls, result: int):
-        """Raises the appropriate exception subclass based on the result."""
-        exception_class = cls.error_map.get(result, UndefinedError)
+    def raise_from_code(cls, code: int):
+        """Raises the appropriate exception subclass based on the error code."""
+        exception_class = cls.error_map.get(code, UndefinedError)
         exception_class.__bases__ = (cls,)
 
         raise exception_class()
@@ -235,7 +235,59 @@ class NoEsimPortAvailable(EuiccException):
     message = "No eSIM port available"
 
 
-class ProfileInstallationException(ResultBaseException):
+class InvalidCertificate(EuiccException):
+    message = "Invalid certificate"
+
+
+class UnsupportedCurve(EuiccException):
+    message = "Unsupported curve"
+
+
+class NoSession(EuiccException):
+    message = "No session"
+
+
+class InvalidOid(EuiccException):
+    message = "Invalid OID"
+
+
+class EuiccChallengeMismatch(EuiccException):
+    message = "eUICC challenge mismatch"
+
+
+class CiPKUnknown(EuiccException):
+    message = "CiPK unknown"
+
+
+class TransactionIdError(EuiccException):
+    message = "Transaction ID error"
+
+
+class MissingCrl(EuiccException):
+    message = "Missing CRL"
+
+
+class InvalidCrlSignature(EuiccException):
+    message = "Invalid CRL signature"
+
+
+class RevokedCert(EuiccException):
+    message = "Revoked certificate"
+
+
+class InvalidCertOrCrlTime(EuiccException):
+    message = "Invalid certificate or CRL time"
+
+
+class InvalidCertOrCrlConfiguration(EuiccException):
+    message = "Invalid certificate or CRL configuration"
+
+
+class InvalidIccid(EuiccException):
+    message = "Invalid ICCID"
+
+
+class ProfileInstallationException(CodeBaseException):
     """Base class for all exceptions raised by the profile installation."""
 
     message: str = "An unknown profile installation error occurred"
@@ -284,7 +336,7 @@ class ProfileInstallationException(ResultBaseException):
         }.get(command_id, "UnknownCommand")
 
     @classmethod
-    def raise_from_result(cls, error_result: dict):
+    def raise_from_code(cls, error_result: dict):
         """Raises the appropriate exception subclass based on the error result."""
 
         error_reason = error_result.get("errorReason")
@@ -295,7 +347,7 @@ class ProfileInstallationException(ResultBaseException):
         raise exception_class(bpp_command_id=bpp_command_id)
 
 
-class NotificationException(ResultBaseException):
+class NotificationException(CodeBaseException):
     """Base class for all exceptions raised by the notification handling."""
 
     message: str = "An unknown notification error occurred"
@@ -305,7 +357,7 @@ class NotificationException(ResultBaseException):
     }
 
 
-class ProfileInteractionException(ResultBaseException):
+class ProfileInteractionException(CodeBaseException):
     """Base class for all exceptions raised by the profile handling."""
 
     message: str = "An unknown profile interaction error occurred"
@@ -323,12 +375,49 @@ class ProfileInteractionException(ResultBaseException):
     }
 
 
-class EuiccMemoryResetException(ResultBaseException):
+class EuiccMemoryResetException(CodeBaseException):
     """Base class for all exceptions raised by the euicc memory reset."""
 
     message: str = "An unknown euicc memory reset error occurred"
     error_map = {
         1: NothingToDeleteError,
         5: CatBusy,
+        127: UndefinedError,
+    }
+
+
+class AuthenticateException(CodeBaseException):
+    """Base class for all exceptions raised by the authentication handling."""
+
+    message: str = "An unknown authentication error occurred"
+    error_map = {
+        1: InvalidCertificate,
+        2: InvalidSignature,
+        3: UnsupportedCurve,
+        4: NoSession,
+        5: InvalidOid,
+        6: EuiccChallengeMismatch,
+        7: CiPKUnknown,
+        8: TransactionIdError,
+        9: MissingCrl,
+        10: InvalidCrlSignature,
+        11: RevokedCert,
+        12: InvalidCertOrCrlTime,
+        13: InvalidCertOrCrlConfiguration,
+        14: InvalidIccid,
+        127: UndefinedError,
+    }
+
+
+class DownloadException(CodeBaseException):
+    """Base class for all exceptions raised by the download handling."""
+
+    message: str = "An unknown download error occurred"
+    error_map = {
+        1: InvalidCertificate,
+        2: InvalidSignature,
+        3: UnsupportedCurve,
+        4: NoSession,
+        5: InvalidTransactionID,
         127: UndefinedError,
     }

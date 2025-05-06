@@ -1,3 +1,4 @@
+from __future__ import annotations
 from dataclasses import dataclass, field
 
 from resimulate.euicc.transport.apdu import APDUPacket
@@ -6,51 +7,120 @@ from resimulate.euicc.mutation.types import MutationType
 
 @dataclass
 class MutationRecording:
-    mutation_type: MutationType
     original_apdu: APDUPacket
     mutated_apdu: APDUPacket
     response_sw: str
 
     def is_different(self, other: "MutationRecording") -> bool:
-        return (
-            self.original_apdu == other.original_apdu
-            and self.mutation_type == other.mutation_type
-            and self.response_sw != other.response_sw
-        )
+        return self.response_sw != other.response_sw
 
 
 @dataclass
-class Operation:
-    application_name: str
+class MutationTreeNode:
     func_name: str
-    mutation_recordings: list[MutationRecording] = field(default_factory=list)
+    mutation_type: MutationType
+    failure_reason: str | None = None
+    leaf: bool = False
+    parent: MutationTreeNode | None = None
+    recording: MutationRecording | None = None
+    children: list["MutationTreeNode"] = field(default_factory=list)
 
-    def compare(self, other: "Operation") -> bool:
-        if (
-            self.application_name != other.application_name
-            or self.func_name != other.func_name
-        ):
+    def add_child(self, child: MutationTreeNode) -> None:
+        self.children.append(child)
+        child.parent = self
+
+    def get_not_tried_mutations(self) -> set[MutationType]:
+        tried_mutations = [node.mutation_type for node in self.children]
+        return set(MutationType).difference(tried_mutations)
+
+    def has_not_tried_mutations(self) -> bool:
+        not_tried_mutations = self.get_not_tried_mutations()
+        return bool(not_tried_mutations)
+
+    def tree_has_not_tried_mutations(self) -> bool:
+        if self.failure_reason or self.leaf:
+            return False
+
+        if self.has_not_tried_mutations():
+            return True
+
+        for child in self.children:
+            if child.tree_has_not_tried_mutations():
+                return True
+
+        return False
+
+    def is_different(self, other: MutationTreeNode) -> bool:
+        if self.mutation_type != other.mutation_type:
+            return True
+
+        if self.failure_reason != other.failure_reason:
+            return True
+
+        if self.recording and other.recording:
+            return self.recording.is_different(other.recording)
+
+        return False
+
+    def compare(self, other: MutationTreeNode | None) -> dict[str, dict[str, str]]:
+        if not other:
+            return {
+                "main": (self.recording.response_sw, self.failure_reason),
+                "compare": None,
+            }
+
+        if self.func_name != other.func_name:
             raise ValueError(
-                f"Cannot compare operations with different application names or function names: "
-                f"{self.application_name} vs {other.application_name}, "
+                f"Cannot compare nodes with different function names: "
                 f"{self.func_name} vs {other.func_name}"
             )
 
-        recording_by_mutation_type = {
-            recording.mutation_type: recording for recording in self.mutation_recordings
-        }
-
         differences = {}
+        child_diff = {}
 
-        for recording in self.mutation_recordings:
-            other_recording = recording_by_mutation_type.get(recording.mutation_type)
-
-            if not recording.is_different(other_recording):
-                continue
-
-            differences[recording.mutation_type] = {
-                "main": recording.response_sw,
-                "compare": other_recording.response_sw,
+        if self.is_different(other):
+            differences = {
+                "main": (self.recording.response_sw, self.failure_reason),
+                "compare": (other.recording.response_sw, other.failure_reason),
             }
 
-        return differences if differences else None
+        for child in self.children:
+            key = (child.func_name, child.mutation_type.name)
+            other_child = next(
+                (c for c in other.children if c.mutation_type == child.mutation_type),
+                None,
+            )
+            if not other_child:
+                continue
+
+            children_diff = child.compare(other_child)
+            if children_diff:
+                child_diff[key] = children_diff
+
+        if child_diff:
+            differences["children"] = child_diff
+
+        return differences
+
+    def print_tree(self, last=True, header=""):
+        elbow = "└──"
+        tee = "├──"
+        pipe = "│  "
+        blank = "   "
+
+        if self.parent is None:
+            prefix = ""
+        else:
+            prefix = elbow if last else tee
+
+        status = [
+            self.mutation_type,
+            self.failure_reason if self.failure_reason else "success",
+        ]
+        postfix = f"({', '.join(status)})" if self.parent else ""
+        print(f"{header}{prefix} {self.func_name} {postfix}")
+
+        for i, child in enumerate(self.children):
+            is_last = i == len(self.children) - 1
+            child_header = header + (blank if last else pipe)
+            child.print_tree(last=is_last, header=child_header)
