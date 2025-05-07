@@ -34,7 +34,7 @@ header_strategy = st.builds(
 )
 
 
-class TestRsp(unittest.TestCase):
+class FuzzRsp(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.link = PcscLink()

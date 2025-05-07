@@ -9,7 +9,7 @@ from resimulate.euicc.exceptions import EuiccException, UndefinedError
 from resimulate.euicc.transport.pcsc_link import PcscLink
 
 
-class TestEuicc(unittest.TestCase):
+class FuzzEuicc(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.link = PcscLink()

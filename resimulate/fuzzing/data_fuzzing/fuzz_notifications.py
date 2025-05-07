@@ -11,7 +11,7 @@ from resimulate.euicc.models.reset_option import ResetOption
 from resimulate.euicc.transport.pcsc_link import PcscLink
 
 
-class TestNotifications(unittest.TestCase):
+class FuzzNotifications(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.link = PcscLink()

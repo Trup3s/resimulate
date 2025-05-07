@@ -15,7 +15,7 @@ from rich.progress import (
 )
 from rich_argparse import RichHelpFormatter
 
-from resimulate.fuzzing import scenarios
+from resimulate.fuzzing import data_fuzzing
 from resimulate.util.logger import init_logger
 
 
@@ -32,7 +32,7 @@ def add_subparser(
 
 def run(args: argparse.Namespace) -> None:
     loader = unittest.TestLoader()
-    modules = scenarios.__all__
+    modules = data_fuzzing.__all__
 
     # Progress UI
     current_test_suit_progress = Progress(
