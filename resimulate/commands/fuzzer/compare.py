@@ -11,19 +11,19 @@ def add_subparser(
     parser: argparse.ArgumentParser = parent_parser.add_parser(
         "compare",
         formatter_class=RichHelpFormatter,
-        help="Compare recorded fuzzings with fuzzing results of other cards.",
-        description="Compare recorded fuzzings with fuzzing results of other cards.",
+        help="Compare recorded apdu fuzzings with fuzzing results of other cards.",
+        description="Compare recorded apdu fuzzings with fuzzing results of other cards.",
     )
     parser.add_argument(
         "main_fuzzing_file",
         type=argparse.FileType("rb"),
-        help="Path to the recorded main fuzzing file (e.g. 'resimulate/recordings/fuzzing.resim')",
+        help="Path to the recorded main apdu fuzzing file (e.g. 'resimulate/recordings/fuzzing.resim')",
     )
     parser.add_argument(
         "compare_fuzzing_files",
         nargs="+",
         type=argparse.FileType("rb"),
-        help="Paths to the recorded fuzzing files to compare against (e.g. 'resimulate/recordings/fuzzing1.resim')",
+        help="Paths to the recorded apdu fuzzing files to compare against (e.g. 'resimulate/recordings/fuzzing1.resim')",
     )
 
 

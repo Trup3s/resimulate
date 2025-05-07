@@ -45,4 +45,11 @@ class LoggerWriter:
         self.level(sys.stderr)
 
 
-log = RichLogger().get_logger()
+def init_logger(verbose: bool | None = None, console: Console | None = None):
+    log_level = logging.DEBUG if verbose else logging.WARNING
+    logging.basicConfig(
+        level=log_level,
+        format="%(message)s",
+        datefmt="[%X]",
+        handlers=[RichHandler(rich_tracebacks=True, console=console, markup=True)],
+    )

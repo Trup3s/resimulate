@@ -2,17 +2,15 @@
 # PYTHON_ARGCOMPLETE_OK
 
 import argparse
-import logging
 from argparse import Namespace
 
 import argcomplete
-from rich.console import Console
-from rich.logging import RichHandler
+from rich import print
 from rich_argparse import RichHelpFormatter
 
 from resimulate.commands import fuzzer, lpa, trace
 from resimulate.util import get_pcsc_devices, get_version
-from resimulate.util.apdu_highlighter import ApduHighlighter
+from resimulate.util.logger import init_logger
 
 devices: list[str] = get_pcsc_devices()
 parser = argparse.ArgumentParser(
@@ -48,14 +46,7 @@ def main():
     argcomplete.autocomplete(parser)
     args: Namespace = parser.parse_args()
 
-    log_level = logging.DEBUG if args.verbose else logging.WARNING
-    console = Console(highlighter=ApduHighlighter())
-    logging.basicConfig(
-        level=log_level,
-        format="%(message)s",
-        datefmt="[%X]",
-        handlers=[RichHandler(rich_tracebacks=True, console=console, markup=True)],
-    )
+    init_logger(args.verbose)
 
     if args.command == "trace":
         trace.run(args)
@@ -68,4 +59,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("Exiting...")

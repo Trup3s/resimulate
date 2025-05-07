@@ -213,4 +213,7 @@ pyrightconfig.json
 ### Asn1tools ###
 .asn_cache/
 
+### Jupyter ###
+*.ipynb
+
 # End of https://www.toptal.com/developers/gitignore/api/git,visualstudiocode,python

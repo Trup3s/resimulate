@@ -45,7 +45,7 @@ class Application:
             command_encoded = asn.encode(
                 request_type,
                 request_data,
-                check_constraints=True,
+                # check_constraints=True,
             )
 
         if len(command_encoded) > 65536:

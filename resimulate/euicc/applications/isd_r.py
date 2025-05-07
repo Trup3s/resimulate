@@ -342,8 +342,8 @@ class ISDR(Application):
         self,
         isdp_aid: str | None = None,
         iccid: str | None = None,
-        profile_class: ProfileClass | None = None,
-        tags: list[ProfileInfoTag] | None = None,
+        profile_class: ProfileClass | int | None = None,
+        tags: list[ProfileInfoTag | str] | bytes | None = None,
     ) -> list[Profile]:
         request_data = {}
         if isdp_aid:
@@ -351,10 +351,19 @@ class ISDR(Application):
         elif iccid:
             request_data["search_criteria"] = ("iccid", iccid)
         elif profile_class:
-            request_data["search_criteria"] = ("profileClass", profile_class.value)
+            if isinstance(profile_class, ProfileClass):
+                profile_class = profile_class.value
+            request_data["search_criteria"] = ("profileClass", profile_class)
 
         if tags:
-            request_data["tagList"] = h2b(" ".join([tag.value for tag in tags]))
+            if isinstance(tags, list):
+                tag_list = [
+                    tag.value if isinstance(tag, ProfileInfoTag) else tag
+                    for tag in tags
+                ]
+                tags = h2b(" ".join(tag_list))
+
+            request_data["tagList"] = tags
 
         response = self.store_data(
             "ProfileInfoListRequest",
@@ -372,11 +381,16 @@ class ISDR(Application):
         return [Profile(**profile) for profile in data]
 
     def get_notifications(
-        self, notification_type: NotificationType | None = None
+        self, notification_type: NotificationType | int | None = None
     ) -> list[Notification]:
         filter = None
         if notification_type:
-            filter = ("profileManagementOperation", notification_type.value)
+            if isinstance(notification_type, NotificationType):
+                notification_type = notification_type.value
+            bit_string = NotificationEvent.from_flags([notification_type])
+            filter = {
+                "profileManagementOperation": NotificationEvent.serialize(bit_string)
+            }
 
         response = self.store_data(
             "ListNotificationRequest",
@@ -386,7 +400,7 @@ class ISDR(Application):
         logging.debug(f"ListNotificationsResponse: {response}")
 
         key, data = response
-        if key == "notificationError":
+        if key == "listNotificationsResultError":
             raise NotificationException.raise_from_code(data)
 
         return [Notification(**notification) for notification in data]
@@ -394,14 +408,17 @@ class ISDR(Application):
     def retrieve_notification_list(
         self,
         seq_number: int | None = None,
-        notification_type: NotificationType | None = None,
+        notification_type: NotificationType | int | None = None,
     ) -> list[PendingNotification]:
         search_criteria = None
-        if seq_number:
+        if seq_number is not None:
             search_criteria = {"searchCriteria": ("seqNumber", seq_number)}
 
-        if notification_type:
-            bit_string = NotificationEvent.from_flags([notification_type.value])
+        if notification_type is not None:
+            if isinstance(notification_type, NotificationType):
+                notification_type = notification_type.value
+
+            bit_string = NotificationEvent.from_flags([notification_type])
             search_criteria = {
                 "searchCriteria": (
                     "profileManagementOperation",
@@ -500,13 +517,13 @@ class ISDR(Application):
         return True
 
     def reset_euicc_memory(
-        self, reset_options: list[ResetOption] | ResetOption
+        self, reset_options: list[ResetOption | int] | ResetOption
     ) -> bool:
         """Deletes selected subsets of the Profiles stored in the eUICC regardless of
         their enabled status or any Profile Policy Rules.
 
         Args:
-            reset_options (list[ResetOption] | ResetOption): Subset of the Profiles to be deleted.
+            reset_options (list[ResetOption | int] | ResetOption): Subset of the Profiles to be deleted.
 
         Returns:
             _type_: True, if the memory was reset successfully.
@@ -516,9 +533,12 @@ class ISDR(Application):
         if not isinstance(reset_options, list):
             reset_options = [reset_options]
 
-        bit_string = ResetOptionBitString.from_flags(
-            [option.value for option in reset_options]
-        )
+        reset_options = [
+            option.value if isinstance(option, ResetOption) else option
+            for option in reset_options
+        ]
+
+        bit_string = ResetOptionBitString.from_flags(reset_options)
 
         response = self.store_data(
             "EuiccMemoryResetRequest",

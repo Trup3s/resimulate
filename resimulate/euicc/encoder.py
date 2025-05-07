@@ -151,6 +151,9 @@ class BitString(PydanticSerializableMixin, metaclass=BitStringMeta):
         Returns:
             BitString: BitString object with the specified flags set
         """
+        if not flags:
+            return cls(bytes(), 0)
+
         bitstring = bytearray((0,) * ((max(flags) // 8) + 1))
         for flag in flags:
             byte_index = flag // 8

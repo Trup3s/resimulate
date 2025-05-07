@@ -23,5 +23,14 @@
   "files.exclude": {
     "**/__pycache__": true
   },
-  "jupyter.debugJustMyCode": false
+  "jupyter.debugJustMyCode": false,
+  "python.testing.unittestArgs": [
+    "-v",
+    "-s",
+    "./resimulate",
+    "-p",
+    "test_*.py"
+  ],
+  "python.testing.pytestEnabled": false,
+  "python.testing.unittestEnabled": true
 }

@@ -29,7 +29,7 @@ class SmdpClient(httpx.Client):
             headers={
                 "Content-Type": "application/json",
                 "User-Agent": "gsma-rsp-lpad",
-                "X-Admin-Protocol": "gsma/rsp/v2.6.0",
+                "X-Admin-Protocol": "gsma/rsp/v3.1.0",
             },
         )
 
