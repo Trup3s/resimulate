@@ -147,22 +147,28 @@ def add_subparser(
         "download",
         formatter_class=RichHelpFormatter,
         help="Download a profile on the euicc.",
+        description="Download a profile on the euicc using an activation code or SMDP address and matching ID.",
     )
-    download_parser.add_argument(
+
+    activation_code_group = download_parser.add_argument_group(
+        "Activation Code parts",
+        "If not activation code is provided, these parts are required.",
+    )
+    activation_code_group.add_argument(
         "-s",
         "--smdp-address",
         required=False,
         type=str,
         help="SMDP+ address of the profile to download (e.g. 'smdp.example.com')",
     )
-    download_parser.add_argument(
+    activation_code_group.add_argument(
         "-m",
         "--matching-id",
         required=False,
         type=str,
         help="Matching ID of the profile to download (e.g. 'A0A4000002')",
     )
-    download_parser.add_argument(
+    activation_code_group.add_argument(
         "-c",
         "--confirmation-code",
         required=False,

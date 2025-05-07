@@ -1,8 +1,9 @@
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 
-from resimulate.euicc.transport.apdu import APDUPacket
 from resimulate.euicc.mutation.types import MutationType
+from resimulate.euicc.transport.apdu import APDUPacket
 
 
 @dataclass
@@ -11,7 +12,7 @@ class MutationRecording:
     mutated_apdu: APDUPacket
     response_sw: str
 
-    def is_different(self, other: "MutationRecording") -> bool:
+    def is_different(self, other: MutationRecording) -> bool:
         return self.response_sw != other.response_sw
 
 
@@ -102,7 +103,7 @@ class MutationTreeNode:
 
         return differences
 
-    def print_tree(self, last=True, header=""):
+    def print_tree(self, last: bool = True, header: str = ""):
         elbow = "└──"
         tee = "├──"
         pipe = "│  "

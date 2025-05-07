@@ -45,9 +45,10 @@ class ScenarioRunner:
         mutation_engine: MutationEngine,
         path: str | None = None,
         overwrite: bool = False,
+        apdu_data_size: int = 255,
     ):
         recorder = OperationRecorder()
-        with PcscLink(recorder=recorder) as link:
+        with PcscLink(recorder=recorder, apdu_data_size=apdu_data_size) as link:
             card = Card(link)
             self.__clear_card(card)
 
@@ -102,10 +103,10 @@ class ScenarioRunner:
 
                 if os.path.exists(file_path):
                     if not overwrite:
-                        logging.warning(f"File {file_path} already exists. Skipping.")
+                        logging.debug(f"File {file_path} already exists. Skipping.")
                         continue
 
-                    logging.warning(f"File {file_path} already exists. Overwriting.")
+                    logging.debug(f"File {file_path} already exists. Overwriting.")
 
                 recorder.save_file(file_path)
                 recorder.clear()

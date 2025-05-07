@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.logging import RichHandler
 from rich_argparse import RichHelpFormatter
 
-from resimulate.commands import lpa, trace
+from resimulate.commands import fuzzer, lpa, trace
 from resimulate.util import get_pcsc_devices, get_version
 from resimulate.util.apdu_highlighter import ApduHighlighter
 
@@ -41,6 +41,7 @@ subparsers = parser.add_subparsers(
 # Attach command subparsers
 lpa.add_subparser(subparsers)
 trace.add_subparser(subparsers)
+fuzzer.add_subparser(subparsers)
 
 
 def main():
@@ -60,6 +61,8 @@ def main():
         trace.run(args)
     elif args.command == "lpa":
         lpa.run(args)
+    elif args.command == "fuzzer":
+        fuzzer.run(args)
     else:
         raise ValueError(f"Unsupported command: {args.command}")
 

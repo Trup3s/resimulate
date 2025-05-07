@@ -39,14 +39,15 @@ def add_subparser(
         formatter_class=RichHelpFormatter,
         help="Process a notification on the euicc.",
     )
-    process_parser.add_argument(
+    process_group = process_parser.add_mutually_exclusive_group(required=True)
+    process_group.add_argument(
         "-n",
         "--sequence-numbers",
         type=int,
         nargs="+",
         help="Sequence numbers of the notifications to process (e.g. '1 2')",
     )
-    process_parser.add_argument(
+    process_group.add_argument(
         "-a",
         "--all",
         action="store_true",
@@ -66,14 +67,15 @@ def add_subparser(
         formatter_class=RichHelpFormatter,
         help="Remove a notification on the euicc.",
     )
-    remove_parser.add_argument(
+    remove_group = remove_parser.add_mutually_exclusive_group(required=True)
+    remove_group.add_argument(
         "-n",
         "--sequence-numbers",
         nargs="+",
         type=int,
         help="Sequence numbers of the notifications to remove (e.g. '1 2')",
     )
-    remove_parser.add_argument(
+    remove_group.add_argument(
         "-a",
         "--all",
         action="store_true",
