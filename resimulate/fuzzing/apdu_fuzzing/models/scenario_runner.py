@@ -7,7 +7,7 @@ from resimulate.euicc.models.reset_option import ResetOption
 from resimulate.euicc.mutation.engine import MutationEngine
 from resimulate.euicc.recorder.recorder import OperationRecorder
 from resimulate.euicc.transport.pcsc_link import PcscLink
-from resimulate.scenarios.models.scenario import Scenario
+from resimulate.fuzzing.apdu_fuzzing.models.scenario import Scenario
 
 
 class ScenarioRunner:
