@@ -4,8 +4,8 @@ from rich_argparse import RichHelpFormatter
 
 from resimulate.euicc.mutation.deterministic_engine import DeterministicMutationEngine
 from resimulate.euicc.mutation.random_engine import RandomMutationEngine
-from resimulate.scenarios import SCENARIOS
-from resimulate.scenarios.models.scenario_runner import ScenarioRunner
+from resimulate.fuzzing.apdu_fuzzing import SCENARIOS
+from resimulate.fuzzing.apdu_fuzzing.models.scenario_runner import ScenarioRunner
 
 
 def add_subparser(

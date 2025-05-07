@@ -1,6 +1,6 @@
 from resimulate.euicc.card import Card
 from resimulate.euicc.models.activation_profile import ActivationProfile
-from resimulate.scenarios.models.scenario import Scenario
+from resimulate.fuzzing.apdu_fuzzing.models.scenario import Scenario
 
 
 class ProfileDownloadScenario(Scenario):

@@ -1,7 +1,7 @@
 from resimulate.euicc.card import Card
 from resimulate.euicc.models.activation_profile import ActivationProfile
 from resimulate.euicc.models.reset_option import ResetOption
-from resimulate.scenarios.models.scenario import Scenario
+from resimulate.fuzzing.apdu_fuzzing.models.scenario import Scenario
 
 
 class EuiccMemoryResetScenario(Scenario):
