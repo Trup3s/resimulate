@@ -17,6 +17,10 @@
     "USIM"
   ],
   "[python]": {
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit",
+      "source.removeUnusedImports": "explicit"
+    },
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "charliermarsh.ruff"
   },

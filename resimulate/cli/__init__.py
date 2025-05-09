@@ -8,7 +8,7 @@ import argcomplete
 from rich import print
 from rich_argparse import RichHelpFormatter
 
-from resimulate.commands import fuzzer, lpa, trace
+from resimulate.cli import fuzzer, lpa, trace
 from resimulate.util import get_pcsc_devices, get_version
 from resimulate.util.logger import init_logger
 
@@ -58,7 +58,7 @@ def main():
         raise ValueError(f"Unsupported command: {args.command}")
 
 
-if __name__ == "__main__":
+def run():
     try:
         main()
     except KeyboardInterrupt:

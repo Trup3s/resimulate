@@ -2,7 +2,7 @@ import argparse
 
 from rich_argparse import RichHelpFormatter
 
-from resimulate.commands.fuzzer import apdu_fuzz, compare, fuzz
+from resimulate.cli.fuzzer import apdu_fuzz, compare, fuzz
 
 
 def add_subparser(parent: argparse._SubParsersAction) -> None:

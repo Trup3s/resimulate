@@ -1,7 +1,8 @@
 import argparse
 
 from rich_argparse import RichHelpFormatter
-from resimulate.commands.trace import record, replay
+
+from resimulate.cli.trace import record, replay
 
 
 def add_subparser(parent_parser: argparse._SubParsersAction) -> None:

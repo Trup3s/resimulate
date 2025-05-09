@@ -2,7 +2,7 @@ import argparse
 
 from rich_argparse import RichHelpFormatter
 
-from resimulate.commands.lpa import euicc, notification, profile
+from resimulate.cli.lpa import euicc, notification, profile
 from resimulate.euicc.card import Card
 from resimulate.euicc.transport.pcsc_link import PcscLink
 
