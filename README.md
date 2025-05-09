@@ -1,13 +1,13 @@
 # ReSIMulate
 
-**ReSIMulate** is a terminal application for analyzing eSIM and SIM card interactions. It allows you to record APDU commands, save them, and replay them for differential testing and debugging.
+**ReSIMulate** is a terminal application and library built for eSIM analysis.
 
 ## Features
 
-- Record APDU commands from a device or interface.
-- Replay saved APDU commands to a target device.
-- Supports configurable timeouts, devices, and verbose output.
-- Enables differential testing for SIM interactions.
+- Full LPA client implementation for eSIM cards.
+- Trace APDU commands between eSIM and Smartphone via the simtrace2 sniffer
+- Replay traced APDU commands to the eSIM card.
+- Fuzzer for eSIM cards.
 
 ## Usage
 
@@ -16,7 +16,7 @@
 ```bash
 $ resimulate --help
 
-Usage: resimulate [-h] [--version] [-v] [-p {0}] {lpa,trace} ...
+Usage: resimulate [-h] [--version] [-v] [-p {0}] {lpa,trace,fuzzer} ...
 
 ReSIMulate is a terminal application and library built for eSIM and SIM-specific APDU analysis.
 
@@ -28,9 +28,10 @@ Options:
                         PC/SC device index (default: 0). 0: OMNIKEY 3x21 Smart Card Reader
 
 Commands:
-  {lpa,trace}           Available commands
+  {lpa,trace,fuzzer}    Available commands
     lpa                 Local Profile Assistant operations
     trace               Trace-level operations (record, replay)
+    fuzzer              Fuzzer operations
 ```
 
 ### Library
@@ -111,6 +112,8 @@ pre-commit install
 ### Sniff APDUs between smartcard reader and program
 
 Source: [blog.apdu.fr](https://blog.apdu.fr/posts/2022/06/pcsc-api-spy-update/)
+
+This is useful for extending the library or just debugging interactions between the smartcard reader and the program using it.
 
 1. Find libpcsclite library that is linked:
 
