@@ -8,7 +8,8 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    container: catthehacker/ubuntu:act-latest
+    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -16,7 +17,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13.1"
+          python-version: "3.13.3"
           cache: "pip"
 
       - name: Install and configure Poetry

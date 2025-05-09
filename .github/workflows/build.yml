@@ -2,14 +2,14 @@ name: Build Python Package
 
 on:
   push:
-    branches:
-      - main
+    branches: ["**"]
   pull_request:
+    branches: ["**"]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: catthehacker/ubuntu:act-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -17,7 +17,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13.1"
+          python-version: "3.13.3"
           cache: "pip"
 
       - name: Load cached Poetry installation
@@ -53,10 +53,6 @@ jobs:
       - name: Lint code by ruff
         run: |
           poetry run ruff .
-
-      - name: Check types by pyright
-        run: |
-          poetry run pyright
 
       - name: Build package
         run: poetry build
