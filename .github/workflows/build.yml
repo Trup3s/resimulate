@@ -51,7 +51,7 @@ jobs:
 
       - name: Lint code by ruff
         run: |
-          poetry run ruff .
+          poetry run ruff check resimulate/**
 
       - name: Build package
         run: poetry build
