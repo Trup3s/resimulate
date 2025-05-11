@@ -21,17 +21,40 @@ dependencies = [
 ]
 
 
+[project.urls]
+Homepage = "https://github.com/Trup3s/resimulate"
+Repository = "https://github.com/Trup3s/resimulate"
+
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.11.8"
+ruff = "^0.11.9"
 pre-commit = "^4.2.0"
 pytest = "^8.3.5"
 
 [tool.poetry.scripts]
 resimulate = "resimulate.cli:run"
+
+[tool.semantic_release]
+upload_to_pypi = false
+upload_to_release = true
+build_command = "pip install poetry && poetry build"
+branch = "main"
+changelog_file = "CHANGELOG.md"
+commit_author = "github-actions <github-actions@github.com>"
+major_on_zero = false
+
+[tool.semantic_release.branches.main]
+match = "main"
+prerelease = false
+
+[tool.semantic_release.branches."rc"]
+match = "rc"
+prerelease = true
+prerelease_token = "rc"
 
 [tool.basedpyright]
 venvPath = "."
