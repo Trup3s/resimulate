@@ -10,14 +10,14 @@ requires-python = ">=3.13"
 dependencies = [
     "rich (>=14.0.0,<15.0.0)",
     "argcomplete (>=3.6.2,<4.0.0)",
-    "rich-argparse (>=1.7.0,<2.0.0)",
+    "rich-argparse (>=1.7.1,<2.0.0)",
     "pysim @ git+https://github.com/Trup3s/pysim.git@resimulate",
-    "pydantic (>=2.11.4,<3.0.0)",
+    "pydantic (>=2.11.6,<3.0.0)",
     "asn1tools (>=0.167.0,<0.168.0)",
     "diskcache (>=5.6.3,<6.0.0)",
     "httpx (>=0.28.1,<0.29.0)",
     "pillow (>=11.2.1,<12.0.0)",
-    "hypothesis (>=6.131.15,<7.0.0)",
+    "hypothesis (>=6.135.9,<7.0.0)",
 ]
 
 
@@ -31,9 +31,9 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.11.9"
+ruff = "^0.11.13"
 pre-commit = "^4.2.0"
-pytest = "^8.3.5"
+pytest = "^8.4.0"
 
 [tool.poetry.scripts]
 resimulate = "resimulate.cli:run"
