@@ -6,7 +6,11 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from resimulate.euicc.card import Card
-from resimulate.euicc.exceptions import EuiccException, UndefinedError
+from resimulate.euicc.exceptions import (
+    EuiccException,
+    IccidAlreadyExists,
+    UndefinedError,
+)
 from resimulate.euicc.models.activation_profile import ActivationProfile
 from resimulate.euicc.models.reset_option import ResetOption
 from resimulate.euicc.transport.pcsc_link import PcscLink
@@ -21,9 +25,16 @@ class FuzzProfiles(unittest.TestCase):
         profile = ActivationProfile.from_activation_code(
             "LPA:1$rsp.truphone.com$QR-G-5C-1LS-1W1Z9P7"
         )
-        pending_notification = cls.card.isd_r.download_profile(profile)
-        notification = pending_notification.get_notification()
-        cls.iccid = notification.iccid
+        try:
+            pending_notification = cls.card.isd_r.download_profile(profile)
+            notification = pending_notification.get_notification()
+            cls.iccid = notification.iccid
+        except IccidAlreadyExists:
+            logging.info(
+                "Profile with ICCID already exists, using existing profile instead."
+            )
+            profiles = cls.card.isd_r.get_profiles()
+            cls.iccid = profiles[-1].iccid if profiles else None
 
     @classmethod
     def tearDownClass(cls):
@@ -72,7 +83,7 @@ class FuzzProfiles(unittest.TestCase):
         if not profiles:
             return
 
-        profile = profiles[0]
+        profile = profiles[-1]
         if profile.iccid:
             self.assertEqual(
                 profile.iccid,
@@ -80,11 +91,8 @@ class FuzzProfiles(unittest.TestCase):
             )
 
     @given(
-        iccid=st.one_of(
-            st.text(min_size=0, max_size=20, alphabet=string.hexdigits).filter(
-                lambda s: len(s) % 2 == 0
-            ),
-            st.none(),
+        iccid=st.text(min_size=0, max_size=20, alphabet=string.hexdigits).filter(
+            lambda s: len(s) % 2 == 0
         ),
         nickname=st.text(min_size=1, max_size=300),
     )
