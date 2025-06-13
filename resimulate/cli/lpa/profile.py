@@ -201,7 +201,7 @@ def run(args: argparse.Namespace, card: Card) -> None:
     elif args.profile_command == "delete":
         card.isd_r.delete_profile(args.iccid, args.isdp_aid)
     elif args.profile_command == "nickname":
-        card.isd_r.set_profile_nickname(args.iccid, args.nickname)
+        card.isd_r.set_nickname(args.iccid, args.nickname)
     elif args.profile_command == "download":
         has_activation_profile_parts = (
             args.smdp_address is not None and args.matching_id is not None
