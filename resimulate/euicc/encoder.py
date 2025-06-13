@@ -92,6 +92,8 @@ class VersionType(HexBase):
 
 
 class BitStringMeta(type):
+    _flags: dict[str, int | IntEnum]
+
     def __new__(mcs, name, bases, namespace, **kwargs):
         if enum := kwargs.get("enum"):
             if not issubclass(enum, IntEnum):
