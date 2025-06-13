@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+## v0.1.0-rc.2 (2025-06-13)
+
+### Bug Fixes
+
+- Add type hint for _flags in BitStringMeta
+  ([`4c642ba`](https://github.com/Trup3s/resimulate/commit/4c642ba2b71fe0c07c13873cee2e23d437721724))
+
+- Improve profile handling
+  ([`95a193c`](https://github.com/Trup3s/resimulate/commit/95a193cbb54ff60d6a2ce51120d3bc8986ec4506))
+
+- Wrong method name
+  ([`c0ddba4`](https://github.com/Trup3s/resimulate/commit/c0ddba43be54b3df52eac80654f0ba2bc628b3b6))
+
+### Chores
+
+- Bump versions
+  ([`55778cf`](https://github.com/Trup3s/resimulate/commit/55778cf4b9517a43bc58a9631e7fcb6793f1af34))
+
+
 ## v0.1.0-rc.1 (2025-05-11)
 
 ### Bug Fixes
