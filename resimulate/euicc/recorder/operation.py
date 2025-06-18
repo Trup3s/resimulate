@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 
 from resimulate.euicc.mutation.types import MutationType
 from resimulate.euicc.transport.apdu import APDUPacket
+from resimulate.util.color import Colors
 
 
 @dataclass
@@ -25,6 +26,7 @@ class MutationTreeNode:
     parent: MutationTreeNode | None = None
     recording: MutationRecording | None = None
     children: list["MutationTreeNode"] = field(default_factory=list)
+    branch_completed: bool = False
 
     def add_child(self, child: MutationTreeNode) -> None:
         self.children.append(child)
@@ -39,7 +41,7 @@ class MutationTreeNode:
         return bool(not_tried_mutations)
 
     def tree_has_not_tried_mutations(self) -> bool:
-        if self.failure_reason or self.leaf:
+        if self.failure_reason or self.leaf or self.branch_completed:
             return False
 
         if self.has_not_tried_mutations():
@@ -119,7 +121,16 @@ class MutationTreeNode:
             self.failure_reason if self.failure_reason else "success",
         ]
         postfix = f"({', '.join(status)})" if self.parent else ""
-        print(f"{header}{prefix} {self.func_name} {postfix}")
+
+        branch_message = f"{self.func_name} {postfix}"
+        if (
+            self.mutation_type != MutationType.NONE
+            and self.leaf
+            and not self.failure_reason
+        ):
+            print(f"{header}{prefix} {Colors.WARNING}{branch_message}{Colors.ENDC}")
+        else:
+            print(f"{header}{prefix} {Colors.OKGREEN}{branch_message}{Colors.ENDC}")
 
         for i, child in enumerate(self.children):
             is_last = i == len(self.children) - 1

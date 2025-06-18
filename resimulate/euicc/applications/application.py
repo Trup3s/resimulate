@@ -35,6 +35,7 @@ class Application:
         response_type: str | None = None,
         request_data: dict | None = None,
         caller_func_name: str | None = None,
+        do_not_mutate: bool = False,
     ) -> dict | tuple | str | None:
         if request_data is None:
             request_data = dict()
@@ -56,7 +57,9 @@ class Application:
             caller_func_name = caller_frame.function
 
         apdu = APDUPacket(cla=0x80, ins=0xE2, p1=0x91, p2=0x00, data=command_encoded)
-        data, sw = self.link.send_apdu_with_mutation(caller_func_name, apdu)
+        data, sw = self.link.send_apdu_with_mutation(
+            caller_func_name, apdu, do_not_mutate=do_not_mutate
+        )
 
         if not any([sw_match(sw, pattern) for pattern in ["9000", "61??"]]):
             raise ApduException(sw)

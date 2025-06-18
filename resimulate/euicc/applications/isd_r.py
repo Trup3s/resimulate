@@ -50,7 +50,10 @@ class ISDR(Application):
             "GetEuiccChallengeRequest",
             "GetEuiccChallengeResponse",
         )
-        return euicc_challenge.get("euiccChallenge").hex()
+        if not euicc_challenge:
+            raise EuiccException("Failed to retrieve eUICC challenge")
+
+        return euicc_challenge.get("euiccChallenge", "").hex()
 
     def get_euicc_info_1(self) -> EuiccInfo1:
         command = self.store_data("GetEuiccInfo1Request", "EUICCInfo1")
@@ -206,7 +209,9 @@ class ISDR(Application):
                 hex_data.append(0x80 + (data_len - 2))
 
             hex_data.append(size)
-            self.store_data(request_data=bytes.fromhex(i2h(hex_data)))
+            self.store_data(
+                request_data=bytes.fromhex(i2h(hex_data)), do_not_mutate=True
+            )
 
         # TODO: Move functions to isd-p
 
@@ -230,24 +235,26 @@ class ISDR(Application):
         # Step 3: Store Metadata
         sequence_of_88 = bound_profile_package.get("sequenceOf88")
         register_list(sequence_of_88, 0xA1)
-        for index, sequence in enumerate(sequence_of_88):
-            send_and_check(sequence, f"sequenceOf88_{index + 1}")
+        for sequence in sequence_of_88:
+            send_and_check(sequence, "sequenceOf88")
 
         # Step 4: Replace Session Keys (optional)
         if second_sequence := bound_profile_package.get("secondSequenceOf87"):
             register_list(second_sequence, 0xA2)
-            for index, sequence in enumerate(second_sequence):
-                send_and_check(
-                    sequence,
-                    f"secondSequenceOf87_{index + 1}",
-                )
+            for sequence in second_sequence:
+                send_and_check(sequence, "secondSequenceOf87")
 
         # Step 5: load profile elements
         sequence_of_86 = bound_profile_package.get("sequenceOf86")
         register_list(sequence_of_86, 0xA3)
         final_result = None
-        for index, sequence in enumerate(sequence_of_86):
-            final_result = send_and_check(sequence, f"sequenceOf86_{index + 1}")
+        for sequence in sequence_of_86:
+            final_result = send_and_check(sequence, "sequenceOf86")
+
+        if not final_result:
+            raise ProfileInstallationException(
+                bpp_command_id=None, message="Final result is None"
+            )
 
         return ProfileInstallationResult(**final_result)
 

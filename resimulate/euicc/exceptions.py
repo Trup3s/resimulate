@@ -318,7 +318,10 @@ class ProfileInstallationException(CodeBaseException):
         127: UndefinedError,
     }
 
-    def __init__(self, bpp_command_id: int):
+    def __init__(self, bpp_command_id: int | None, message: str | None = None):
+        if message:
+            self.message = message
+
         self.bpp_command_id = bpp_command_id
         self.bpp_command = self.get_bpp_command(bpp_command_id)
 

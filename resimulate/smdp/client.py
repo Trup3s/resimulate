@@ -126,7 +126,7 @@ class SmdpClient(httpx.Client):
         self,
         pending_notification: PendingNotification,
     ) -> None:
-        data = pending_notification.model_dump()
+        data = pending_notification.model_dump(by_alias=True, exclude_none=True)
         seq_number = None
         if isinstance(pending_notification, ProfileInstallationResult):
             notification = ("profileInstallationResult", data)

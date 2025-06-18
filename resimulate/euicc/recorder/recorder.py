@@ -2,10 +2,7 @@ import logging
 import pickle
 
 from resimulate.euicc.mutation.types import MutationType
-from resimulate.euicc.recorder.operation import (
-    MutationRecording,
-    MutationTreeNode,
-)
+from resimulate.euicc.recorder.operation import MutationRecording, MutationTreeNode
 from resimulate.util.name_generator import generate_name
 
 
@@ -15,7 +12,8 @@ class OperationRecorder:
     root: MutationTreeNode
     current_node: MutationTreeNode
 
-    def __init__(self):
+    def __init__(self, print_progress: bool = True):
+        self.print_progress = print_progress
         self.clear()
 
     def record(self, recording: MutationRecording):
@@ -26,7 +24,13 @@ class OperationRecorder:
         self.current_node.add_child(node)
         self.current_node = node
 
-    def get_next_mutation(self, func_name: str) -> MutationTreeNode | None:
+    def get_next_mutation(self, func_name: str) -> MutationType | None:
+        if self.print_progress:
+            self.root.print_tree()
+
+        if func_name == self.current_node.func_name:
+            return self.current_node.mutation_type
+
         not_tried_mutations = self.current_node.get_not_tried_mutations()
         if not_tried_mutations:
             logging.debug("Current node has not tried mutations...")
@@ -39,26 +43,26 @@ class OperationRecorder:
 
         none_mutation_node = None
         for child in self.current_node.children:
-            if child.failure_reason:
+            if child.mutation_type is MutationType.NONE:
+                none_mutation_node = child
+
+            if child.failure_reason or child.leaf or child.branch_completed:
                 continue
 
-            not_tried_mutations = child.get_not_tried_mutations()
-
-            if not_tried_mutations:
+            if child.tree_has_not_tried_mutations():
                 self.current_node = child
                 logging.debug(
                     f"Found a child with not tried mutations: {child.func_name} -> {child.mutation_type}"
                 )
                 return child.mutation_type
 
-            if child.mutation_type is MutationType.NONE:
-                none_mutation_node = child
-
         assert none_mutation_node is not None, "No child with NONE mutation node found!"
         logging.debug(
             "Could not find a child with not tried mutations, continuing with NONE mutation node!"
         )
-        return none_mutation_node
+
+        self.current_node = none_mutation_node
+        return none_mutation_node.mutation_type
 
     def clear(self):
         self.root = MutationTreeNode(func_name="root", mutation_type=MutationType.NONE)

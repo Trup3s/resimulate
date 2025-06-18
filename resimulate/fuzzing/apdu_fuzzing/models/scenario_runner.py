@@ -1,12 +1,13 @@
 import logging
 import os
 
-from resimulate.euicc import exceptions
 from resimulate.euicc.card import Card
+from resimulate.euicc.exceptions import EuiccException, NothingToDeleteError
 from resimulate.euicc.models.reset_option import ResetOption
 from resimulate.euicc.mutation.engine import MutationEngine
 from resimulate.euicc.recorder.recorder import OperationRecorder
 from resimulate.euicc.transport.pcsc_link import PcscLink
+from resimulate.fuzzing.apdu_fuzzing.models.exceptions import ScenarioException
 from resimulate.fuzzing.apdu_fuzzing.models.scenario import Scenario
 
 
@@ -36,7 +37,7 @@ class ScenarioRunner:
 
         try:
             card.isd_r.reset_euicc_memory(reset_options=ResetOption.all())
-        except exceptions.NothingToDeleteError:
+        except NothingToDeleteError:
             pass
 
     def record_card(
@@ -64,21 +65,24 @@ class ScenarioRunner:
                     try:
                         scenario_cls(link).run(card)
                         recorder.current_node.leaf = True
-                    except (exceptions.EuiccException, AssertionError) as e:
+                    except EuiccException as e:
                         logging.debug(
                             f"Scenario {scenario_name} failed on operation {recorder.current_node.func_name}... Resetting and continuing!"
                         )
                         recorder.current_node.failure_reason = e.__class__.__name__
                         continue
+                    except ScenarioException as e:
+                        logging.debug(
+                            f"Scenario {scenario_name} failed with scenario exception: {e}. Stopping..."
+                        )
+                        break
                     finally:
                         link.mutation_engine = None
                         try:
-                            card.isd_r.reset_euicc_memory(
-                                reset_options=ResetOption.all()
-                            )
+                            self.__clear_card(card)
                         except Exception:
                             logging.debug(
-                                "Failed to reset card after scenario execution"
+                                "Failed to clear card after scenario execution"
                             )
 
                         link.mutation_engine = mutation_engine

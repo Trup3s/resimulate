@@ -133,7 +133,9 @@ class PcscLink(LinkBaseTpdu):
         )
         return i2h(data), i2h([sw1, sw2])
 
-    def send_apdu_with_mutation(self, func_name: str, apdu: APDUPacket) -> ResTuple:
+    def send_apdu_with_mutation(
+        self, func_name: str, apdu: APDUPacket, do_not_mutate: bool = False
+    ) -> ResTuple:
         def handle_apdu_transmission(apdu: APDUPacket) -> tuple[str | None, str]:
             logging.debug("Sending %s", str(apdu))
 
@@ -149,7 +151,7 @@ class PcscLink(LinkBaseTpdu):
 
             return data, sw
 
-        if not self.mutation_engine:
+        if not self.mutation_engine or do_not_mutate:
             return handle_apdu_transmission(apdu)
 
         mutation_type = self.recorder.get_next_mutation(func_name)
