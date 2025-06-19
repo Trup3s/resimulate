@@ -9,6 +9,7 @@ from resimulate.euicc.recorder.recorder import OperationRecorder
 from resimulate.euicc.transport.pcsc_link import PcscLink
 from resimulate.fuzzing.apdu_fuzzing.models.exceptions import ScenarioException
 from resimulate.fuzzing.apdu_fuzzing.models.scenario import Scenario
+from resimulate.smdp.exceptions import SmdpException
 
 
 class ScenarioRunner:
@@ -65,7 +66,7 @@ class ScenarioRunner:
                     try:
                         scenario_cls(link).run(card)
                         recorder.current_node.leaf = True
-                    except EuiccException as e:
+                    except (EuiccException, SmdpException) as e:
                         logging.debug(
                             f"Scenario {scenario_name} failed on operation {recorder.current_node.func_name}... Resetting and continuing!"
                         )
@@ -88,7 +89,7 @@ class ScenarioRunner:
                         link.mutation_engine = mutation_engine
                         recorder.reset()
 
-                    if not recorder.root.tree_has_not_tried_mutations():
+                    if not recorder.root.has_not_tried_mutations():
                         logging.info(
                             f"Scenario {scenario_name} finished with all mutations tried!"
                         )

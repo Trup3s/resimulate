@@ -9,6 +9,7 @@ class ProfileDownloadScenario(Scenario):
             "LPA:1$rsp.truphone.com$QR-G-5C-1LS-1W1Z9P7"  # "LPA:1$smdpp.test.rsp.sysmocom.de$TS48v5_SAIP2.1B_NoBERTLV"
         )
         card.isd_r.download_profile(profile)
+
         """ notification = card.isd_r.download_profile(profile)
         iccid = notification.data.notification.iccid
         card.isd_r.process_notifications([notification])

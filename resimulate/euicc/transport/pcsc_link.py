@@ -163,7 +163,7 @@ class PcscLink(LinkBaseTpdu):
                 original_apdu=apdu,
                 mutated_apdu=mutated_apdu,
                 response_sw=sw,
+                response_data=data,
             )
         )
-
         return data, sw

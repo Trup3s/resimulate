@@ -17,7 +17,8 @@ class OperationRecorder:
         self.clear()
 
     def record(self, recording: MutationRecording):
-        self.current_node.recording = recording
+        if self.current_node.recording is None:
+            self.current_node.recording = recording
 
     def add_new_mutation_node(self, func_name: str, mutation_type: MutationType):
         node = MutationTreeNode(func_name=func_name, mutation_type=mutation_type)
@@ -46,10 +47,10 @@ class OperationRecorder:
             if child.mutation_type is MutationType.NONE:
                 none_mutation_node = child
 
-            if child.failure_reason or child.leaf or child.branch_completed:
+            if child.failure_reason or child.leaf:
                 continue
 
-            if child.tree_has_not_tried_mutations():
+            if child.has_not_tried_mutations():
                 self.current_node = child
                 logging.debug(
                     f"Found a child with not tried mutations: {child.func_name} -> {child.mutation_type}"
