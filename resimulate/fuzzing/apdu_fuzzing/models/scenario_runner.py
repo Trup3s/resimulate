@@ -1,6 +1,8 @@
 import logging
 import os
 
+from asn1tools.codecs.ber import DecodeTagError
+
 from resimulate.euicc.card import Card
 from resimulate.euicc.exceptions import EuiccException, NothingToDeleteError
 from resimulate.euicc.models.reset_option import ResetOption
@@ -66,7 +68,7 @@ class ScenarioRunner:
                     try:
                         scenario_cls(link).run(card)
                         recorder.current_node.leaf = True
-                    except (EuiccException, SmdpException) as e:
+                    except (EuiccException, SmdpException, DecodeTagError) as e:
                         logging.debug(
                             f"Scenario {scenario_name} failed on operation {recorder.current_node.func_name}... Resetting and continuing!"
                         )

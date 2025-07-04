@@ -3,6 +3,7 @@ import argparse
 from rich_argparse import RichHelpFormatter
 
 from resimulate.euicc.mutation.deterministic_engine import DeterministicMutationEngine
+from resimulate.euicc.mutation.engine import MutationEngine
 from resimulate.euicc.mutation.random_engine import RandomMutationEngine
 from resimulate.fuzzing.apdu_fuzzing import SCENARIOS
 from resimulate.fuzzing.apdu_fuzzing.models.scenario_runner import ScenarioRunner
@@ -61,7 +62,7 @@ def add_subparser(
 
 
 def run(args: argparse.Namespace) -> None:
-    engine_map = {
+    engine_map: dict[str, type[MutationEngine]] = {
         "deterministic": DeterministicMutationEngine,
         "random": RandomMutationEngine,
     }
@@ -77,7 +78,7 @@ def run(args: argparse.Namespace) -> None:
     runner = ScenarioRunner(scenarios=scenarios)
     runner.record_card(
         card_name=args.card_name,
-        mutation_engine=mutation_engine_cls(),
+        mutation_engine=mutation_engine_cls(seed=42),
         path=args.output,
         overwrite=args.overwrite,
         apdu_data_size=args.max_apdu_size,

@@ -19,14 +19,14 @@ from resimulate.util.enums import ISDR_AID
 
 class Recorder:
     def __init__(self, source: ApduSource, src_isd_r: ISDR_AID):
-        self.tracer = Tracer(source, isd_r_aid=src_isd_r.aid)
+        self.tracer = Tracer(source, isd_r_aid=src_isd_r)
         self.src_isd_r_aid = src_isd_r
 
         self.package_queue: Queue[tuple[Apdu, ApduCommand]] = Queue()
         self.tracer_thread = Thread(
             target=self.tracer.main, args=(self.package_queue,), daemon=True
         )
-        self.recording = Recording(src_isd_r=src_isd_r.aid)
+        self.recording = Recording(src_isd_r=src_isd_r)
         signal.signal(signal.SIGINT, self.__signal_handler)
 
     def __signal_handler(self, sig, frame):

@@ -25,7 +25,7 @@ def add_subparser(
     )
     parser.add_argument(
         "--isd-r",
-        type=ISDR_AID.from_description,
+        type=str,
         default=ISDR_AID.DEFAULT.description,
         choices=ISDR_AID.get_all_descriptions(),
         help="ISD-R to use. (default: %(default)s)",
@@ -50,5 +50,5 @@ def add_subparser(
 
 def run(args: argparse.Namespace) -> None:
     source: GsmtapApduSource = GsmtapApduSource(args.bind_ip, int(args.bind_port))
-    recorder: Recorder = Recorder(source, args.isd_r)
+    recorder: Recorder = Recorder(source, ISDR_AID.from_description(args.isd_r))
     recorder.record(args.output, args.timeout)

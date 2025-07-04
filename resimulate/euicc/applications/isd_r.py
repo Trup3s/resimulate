@@ -201,7 +201,7 @@ class ISDR(Application):
 
             return result
 
-        def register_list(data: list[bytes], tag: int):
+        def send_tag_and_length(data: list[bytes], tag: int):
             size = sum(len(seq) for seq in data)
             hex_data = [tag]
             data_len = len(i2h([size]))
@@ -213,6 +213,16 @@ class ISDR(Application):
                 request_data=bytes.fromhex(i2h(hex_data)), do_not_mutate=True
             )
 
+        """
+        The segmentation SHALL be done according to the structure of the Bound Profile Package:
+        - Tag and length fields of the BoundProfilePackage TLV plus the  initialiseSecureChannelRequest TLV
+        - Tag and length fields of the first sequenceOf87 TLV plus the first '87' TLV
+        - Tag and length fields of the sequenceOf88 TLV
+        - Each of the '88' TLVs
+        - Tag and length fields of the sequenceOf87 TLV plus the first '87' TLV
+        - Tag and length fields of the sequenceOf86 TLV
+        - Each of the '86' TLVs
+        """
         # TODO: Move functions to isd-p
 
         # Step 1: initialise secure channel
@@ -233,20 +243,20 @@ class ISDR(Application):
         )
 
         # Step 3: Store Metadata
-        sequence_of_88 = bound_profile_package.get("sequenceOf88")
-        register_list(sequence_of_88, 0xA1)
+        sequence_of_88 = bound_profile_package.get("sequenceOf88", [])
+        send_tag_and_length(sequence_of_88, 0xA1)
         for sequence in sequence_of_88:
             send_and_check(sequence, "sequenceOf88")
 
         # Step 4: Replace Session Keys (optional)
         if second_sequence := bound_profile_package.get("secondSequenceOf87"):
-            register_list(second_sequence, 0xA2)
+            send_tag_and_length(second_sequence, 0xA2)
             for sequence in second_sequence:
                 send_and_check(sequence, "secondSequenceOf87")
 
         # Step 5: load profile elements
         sequence_of_86 = bound_profile_package.get("sequenceOf86")
-        register_list(sequence_of_86, 0xA3)
+        send_tag_and_length(sequence_of_86, 0xA3)
         final_result = None
         for sequence in sequence_of_86:
             final_result = send_and_check(sequence, "sequenceOf86")

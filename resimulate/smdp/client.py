@@ -20,11 +20,14 @@ from resimulate.smdp.models import (
 
 
 class SmdpClient(httpx.Client):
-    def __init__(self, smdp_address: str, verify_ssl: bool = True):
+    def __init__(
+        self, smdp_address: str, verify_ssl: bool = True, protocol: str = "https"
+    ) -> None:
         self.smdp_address = smdp_address
-
+        print(f"Connecting to SMDP+ server at {smdp_address}")
+        print(f"SSL verification is {'enabled' if verify_ssl else 'disabled'}")
         super().__init__(
-            base_url=f"https://{smdp_address}",
+            base_url=f"{protocol}://{smdp_address}",
             verify=verify_ssl,
             headers={
                 "Content-Type": "application/json",
