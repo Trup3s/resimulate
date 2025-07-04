@@ -9,6 +9,7 @@ class DeterministicMutationEngine(MutationEngine):
     def __init__(
         self,
         mutation_rate: float = 0.01,
+        seed: int | float | str | bytes | bytearray | None = None,
     ):
         self.mutation_rate = mutation_rate
 

@@ -166,4 +166,8 @@ class PcscLink(LinkBaseTpdu):
                 response_data=data,
             )
         )
+        if not self.recorder.current_trace:
+            self.recorder.current_trace = []
+
+        self.recorder.current_trace.append(self.recorder.current_node)
         return data, sw

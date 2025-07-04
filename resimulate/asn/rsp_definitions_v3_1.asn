@@ -2,7 +2,7 @@ RSPDefinitions {joint-iso-itu-t (2) international-organizations (23) gsma (146) 
 DEFINITIONS AUTOMATIC TAGS EXTENSIBILITY IMPLIED ::= BEGIN
 
 IMPORTS
-     Certificate, CertificateList, Time
+     Certificate, CertificateOriginal, CertificateList, Time
           FROM PKIX1Explicit88 {iso (1) identifiedorganization (3) dod (6) internet (1) security (5) mechanisms (5) pkix (7) id-mod (0) idpkix1-explicit (18)}
      SubjectKeyIdentifier
           FROM PKIX1Implicit88 {iso (1) identified-organization (3) dod (6) internet (1) security (5) mechanisms (5) pkix (7) id-mod (0) id-pkix1-implicit (19)}
@@ -815,15 +815,16 @@ NotificationSentResponse ::= [48] SEQUENCE { -- Tag 'BF30'
                    }
 }
 
-/* AuthenticateServerRequest ::= [56] SEQUENCE { -- Tag 'BF38'
-serverSigned1  ServerSigned1, -- Signed information
-serverSignature1 [APPLICATION 55] OCTET STRING, -- tag '5F37'
-euiccCiPKIdToBeUsed SubjectKeyIdentifier OPTIONAL, -- eSIM CA RootCA Public Key Identifier to be used; MAY also have zero length
-serverCertificate Certificate, -- RSP Server Certificate CERT.XXauth.SIG
-ctxParams1     CtxParams1,
-otherCertsInChain [1] CertificateChain OPTIONAL, -- #SupportedFromV3.0.0# The remaining part of the CERT.XXauth.SIG certificate chain (if any)
-crlList        [2] SEQUENCE OF CertificateList OPTIONAL -- #SupportedFromV3.0.0# as specified in RFC 5280
-} */
+AuthenticateServerRequestOriginal ::= [56] SEQUENCE { -- Tag 'BF38'
+    serverSigned1  ServerSigned1, -- Signed information
+    serverSignature1 [APPLICATION 55] OCTET STRING, -- tag '5F37'
+    euiccCiPKIdToBeUsed SubjectKeyIdentifier OPTIONAL, -- eSIM CA RootCA Public Key Identifier to be used; MAY also have zero length
+    serverCertificate CertificateOriginal, -- RSP Server Certificate CERT.XXauth.SIG
+    ctxParams1     CtxParams1,
+    otherCertsInChain [1] CertificateChain OPTIONAL, -- #SupportedFromV3.0.0# The remaining part of the CERT.XXauth.SIG certificate chain (if any)
+    crlList        [2] SEQUENCE OF CertificateList OPTIONAL -- #SupportedFromV3.0.0# as specified in RFC 5280
+}
+
 AuthenticateServerRequest ::= [56] SEQUENCE { -- Tag 'BF38'
     serverSigned1  ANY,    -- Signed information
     serverSignature1 [APPLICATION 55] ANY, -- tag '5F37'

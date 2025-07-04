@@ -11,9 +11,13 @@ class OperationRecorder:
     name = None
     root: MutationTreeNode
     current_node: MutationTreeNode
+    traces: list[list[MutationTreeNode]]
+    current_trace: list[MutationTreeNode]
 
     def __init__(self, print_progress: bool = True):
         self.print_progress = print_progress
+        self.traces = []
+        self.current_trace = []
         self.clear()
 
     def record(self, recording: MutationRecording):
@@ -72,6 +76,8 @@ class OperationRecorder:
 
     def reset(self):
         logging.debug("Resetting recorder")
+        self.traces.append(self.current_trace.copy())
+        self.current_trace = []
         self.current_node = self.root
 
     def save_file(self, file_path: str):

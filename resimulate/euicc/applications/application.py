@@ -56,7 +56,9 @@ class Application:
             caller_frame = inspect.stack()[1]
             caller_func_name = caller_frame.function
 
-        apdu = APDUPacket(cla=0x80, ins=0xE2, p1=0x91, p2=0x00, data=command_encoded)
+        apdu = APDUPacket(
+            cla=self.cla_byte, ins=0xE2, p1=0x91, p2=0x00, data=command_encoded
+        )
         data, sw = self.link.send_apdu_with_mutation(
             caller_func_name, apdu, do_not_mutate=do_not_mutate
         )

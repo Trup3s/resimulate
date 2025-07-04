@@ -250,11 +250,33 @@ DirectoryString ::= CHOICE {
 -- certificate and CRL specific structures begin here
 Certificate ::= SEQUENCE {
     tbsCertificate TBSCertificate,
+    signatureAlgorithm ANY,
+    signature      ANY
+}
+
+CertificateOriginal ::= SEQUENCE {
+    tbsCertificate TBSCertificate,
     signatureAlgorithm AlgorithmIdentifier,
     signature      BIT STRING
 }
 
 TBSCertificate ::= SEQUENCE {
+    version        ANY,
+    serialNumber   ANY,
+    signature      ANY,
+    issuer         ANY,
+    validity       ANY,
+    subject        ANY,
+    subjectPublicKeyInfo ANY,
+    issuerUniqueID [1] ANY OPTIONAL,
+         -- If present, version MUST be v2 or v3
+    subjectUniqueID [2] ANY OPTIONAL,
+         -- If present, version MUST be v2 or v3
+    extensions     [3] ANY OPTIONAL
+-- If present, version MUST be v3 --
+}
+
+TBSCertificateOriginal ::= SEQUENCE {
     version        [0] Version DEFAULT v1,
     serialNumber   CertificateSerialNumber,
     signature      AlgorithmIdentifier,

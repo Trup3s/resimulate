@@ -35,7 +35,7 @@ class Tracer:
         profile = CardProfileUICC()
         profile.add_application(CardApplicationUSIM())
         profile.add_application(CardApplicationISIM())
-        profile.add_application(CardApplicationISDR(aid=isd_r_aid.value))
+        profile.add_application(CardApplicationISDR(aid=isd_r_aid.aid))
         profile.add_application(CardApplicationECASD())
         profile.add_application(CardApplicationARAM())
         profile.add_application(CardApplicationISD())

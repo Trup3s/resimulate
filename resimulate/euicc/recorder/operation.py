@@ -28,6 +28,7 @@ class MutationTreeNode:
     parent: MutationTreeNode | None = None
     recording: MutationRecording | None = None
     children: list["MutationTreeNode"] = field(default_factory=list)
+    trace: list[MutationRecording] = field(default_factory=list)
 
     def add_child(self, child: MutationTreeNode) -> None:
         self.children.append(child)
